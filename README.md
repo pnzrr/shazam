@@ -1,0 +1,231 @@
+# shazam — personal github dashboard
+
+A single pane for the GitHub work you owe, run locally on your own machine, with
+the quick actions that normally cost several clicks across several tools.
+
+```
+npx shazam serve
+```
+
+## Quick start
+
+```bash
+npm install
+npm run build
+node dist/server/cli.js serve
+```
+
+`serve` validates your toolchain, starts on `http://127.0.0.1:4270`, and opens a
+browser at a URL carrying the access token. Options:
+
+| Flag | Meaning |
+| --- | --- |
+| `-p, --port <n>` | Port to listen on (default `4270`) |
+| `-i, --poll <ms>` | Poll interval (default `60000`, floor `15000`) |
+| `--no-open` | Do not open a browser |
+| `--skip-preflight` | Start even if a required tool is missing |
+
+For development, `npm run dev` runs the API and a Vite dev server with HMR on
+port 4271.
+
+## What it shows
+
+Four columns, each sorted by last updated, descending:
+
+- **My pull requests** — open PRs you authored. Icons for CI state, review
+  decision, merge conflicts, unresolved review threads, and diff size. A
+  **Merge** button, enabled when the PR is approved, mergeable, not a draft,
+  and not red on CI. A run still in progress does not block it — the button
+  turns amber and reads **Merge !** so you know what you are doing.
+- **Waiting on my review** — PRs where review is requested from you and you have
+  not reviewed yet (`review-requested:@me -reviewed-by:@me`). Same status icons,
+  plus an **Approve** button.
+- **Issues I opened** — `author:@me`, with comment counts and labels, and a
+  **Close** button.
+- **Assigned to me** — `assignee:@me -author:@me`. The exclusion keeps the two
+  issue columns disjoint, the same way *Waiting on my review* excludes your own
+  PRs, so assigning yourself to your own issue does not list it twice. These
+  rows show who opened them.
+
+Merge, Approve and Close commit immediately on click — no confirmation step.
+Each carries a caret with "… with comment", which opens a dialog to write one
+first (and, for merge, to pick a different method for that one merge). All
+three are reversible on GitHub, which is why the fast path is the default one.
+
+Acting on a row refreshes the dashboard **and** hides that row straight away.
+The refresh alone is not enough: GitHub's search index is eventually
+consistent, so a PR you just approved keeps matching `-reviewed-by:@me` for a
+while and would sit there looking untouched. The row is hidden for 90 seconds
+and comes back if the action did not in fact remove it.
+
+### Merge methods
+
+Merge uses `defaultMergeMethod` from config, but only where it is actually
+permitted, checked in two places:
+
+- **Repository settings** — squash, merge commits and rebase can each be
+  switched off (`squashMergeAllowed` and friends, read with the dashboard
+  query).
+- **Branch rulesets** — a ruleset on the base branch can narrow things further,
+  so a repo with squash enabled everywhere can still refuse a squash into
+  `main`. Read from `/repos/{repo}/rules/branches/{branch}`, cached for ten
+  minutes and only fetched for PRs whose Merge button is live, so it costs
+  roughly nothing per poll.
+
+Whatever survives both is what the button sends, and the tooltip names it. The
+comment dialog offers only those methods too. If a repository has disabled all
+three, Merge is greyed out rather than letting you click into a failure.
+
+Every PR row also has a **Shazam** button. Owner filter chips in the header are
+derived from whatever is on screen, so they need no configuration.
+
+Every tile is itself a link: clicking anywhere that is not a button or a chip
+opens the PR or issue on GitHub. The status chips deep-link into the relevant
+tab instead — checks to `/checks`, the conflict marker to GitHub's conflict
+resolver at `/conflicts`, and the `+/-` diff stat to `/files`.
+
+## Shazam
+
+Shazam gets you from "this PR needs work" to a coding agent sitting in the right
+branch, in one click:
+
+1. Ensures a bare clone of the base repo under `~/.shazam/mirrors/`, reused
+   across every PR in that repo.
+2. Fetches just that PR's head (`refs/pull/<n>/head`), which works the same for
+   fork and same-repo PRs.
+3. Adds a git worktree under `~/.shazam/worktrees/<owner>-<repo>-pr<n>` and sets
+   up branch tracking so a plain `git push` updates the PR — including pushing
+   to the contributor's fork when the PR came from one.
+4. Spawns Claude Code or Codex there with a prompt telling it to load the PR,
+   read the review comments and CI state, and wait for your instruction.
+5. Streams the session into a terminal dock that opens across the bottom half
+   of the window and takes keyboard focus, so you can type at the agent
+   straight away. Drag its top edge to resize; the terminal reflows to fit.
+   Sessions survive a page reload, and scrollback is replayed on reattach.
+
+A fork PR's branch is namespaced `pr-<n>-<branch>` so a fork branch called `main`
+cannot clobber the base repo's `main`.
+
+The split button's caret picks the other agent. Agents that were not found on
+`PATH` at startup are disabled rather than hidden.
+
+### Workspace trust
+
+Both agents ask whether you trust a directory the first time they open one.
+Because every worktree shares a single bare mirror, and both agents key that
+question on the canonical git root, it gets asked **once per repository** rather
+than once per PR — the second PR you open in the same repo starts silently.
+
+`trustWorktrees` (on by default) answers even that first question ahead of time.
+It only ever applies to directories under `~/.shazam/`, never to your own
+checkouts:
+
+- **Codex** accepts a per-invocation setting, so shazam passes
+  `-c projects."<worktree>".trust_level="trusted"` and writes nothing to disk.
+- **Claude Code** has no equivalent flag, so shazam records the answer where its
+  own dialog would record it: `hasTrustDialogAccepted` against the mirror in
+  `~/.claude.json`. Running Claude sessions rewrite that file wholesale, so
+  shazam re-reads it immediately before writing, writes through a temporary file
+  and a rename, and skips the write entirely once the grant exists — which makes
+  it at most one write per repository.
+
+Set `"trustWorktrees": false` to answer the prompts yourself instead.
+
+## Configuration
+
+Optional, at `~/.shazam/config.json`:
+
+```json
+{
+  "pollIntervalMs": 60000,
+  "port": 4270,
+  "defaultAgent": "claude",
+  "defaultMergeMethod": "squash",
+  "perColumnLimit": 100,
+  "trustWorktrees": true,
+  "terminalFontSize": 20,
+  "shazamPrompt": "You are working on pull request {url}. ..."
+}
+```
+
+`shazamPrompt` substitutes `{url}`, `{number}`, `{repo}`, `{path}` and
+`{branch}`.
+
+## How it works
+
+- **Auth.** Reads use a token from `gh auth token` against the GraphQL API;
+  writes shell out to `gh` so merges and approvals run as exactly the identity
+  in `gh auth status`. shazam never stores a GitHub credential of its own.
+- **Polling.** The server polls GitHub on an interval into an in-memory cache
+  and the browser reads that cache, so extra tabs and manual refreshes cost no
+  API quota. One GraphQL request covers all four columns. Remaining rate limit
+  is in the header.
+- **Access control.** The dashboard can spawn shells, so `/api` and `/ws` require
+  a token (`~/.shazam/token`, mode 0600) and a loopback `Origin`. The server
+  binds `127.0.0.1` only.
+
+## Swapping components out
+
+Columns are the unit of swappability. A column is a `ColumnDef`
+(`src/web/components/registry.ts`) that knows how to select its rows from the
+dashboard payload and how to render one row:
+
+```ts
+export const myPullRequests: ColumnDef = {
+  id: 'myPullRequests',
+  title: 'My pull requests',
+  select: (data) => data.columns.myPullRequests,
+  renderItem: (item, ctx) => <PrCard pr={item} ctx={ctx} action="merge" />,
+}
+```
+
+Adding, removing or reordering a list is an edit to the `COLUMNS` array in
+`src/web/components/columns/index.ts`. Agents are similarly behind an
+`AgentAdapter` (`src/server/agent/adapter.ts`) — adding one is a new adapter plus
+a preflight entry.
+
+## Known gaps
+
+- Worktrees and mirrors under `~/.shazam/` are never garbage collected. Closing
+  a session kills the process but leaves the checkout on disk.
+- Each column is capped at `perColumnLimit` (100, GitHub's own ceiling for a
+  search page); there is no pagination beyond that.
+- Merge does not delete the branch, wait for a merge queue, or offer auto-merge.
+- Sessions live in the server process; restarting `shazam` ends them.
+
+## Assumptions
+
+The developer has `gh`, `claude`, `codex` and `git` installed and is logged in on
+the machine where this runs. Preflight checks all of them at startup and refuses
+to start without `git`, `gh` and a working `gh auth status`.
+
+## Design brief
+
+The original brief this was built from:
+
+> The goal of this project is to create a simple web application that can be run
+> locally on a developer's machine which gives a single-pane state of the
+> developer's work to be done on github, and give them quick actions to take that
+> are currently several clicks in different tools.
+>
+> We are going to iterate on this idea as we assess its viability, so build
+> components in a way that can easily be swapped in and out on the dashboard.
+>
+> - open pull requests that I have created in all repos sorted by last updated
+>   descending. icons to show if it's approved, if it's passing/failing ci, if
+>   there are review comments and/or changes requested. button to merge if it's
+>   approved.
+> - open/outstanding (I haven't reviewed yet) pull requests where I have been
+>   assigned as a reviewer sorted by last updated descending. icons to show if
+>   it's approved, if it's passing/failing ci. button to approve.
+> - open issues i have created sorted by last updated descending. icon to show
+>   how many comments. link to the issue.
+> - all pr list entities should have a link to the pr and a shazam button:
+>   opens a claude/codex session, clones the repo where the pr came from, at the
+>   branch of the pr, with an initial prompt giving the instruction to load the
+>   PR from the link and then be prepared to do work on this PR, including
+>   responding to review comments.
+> - lists should auto update periodically by polling
+>
+> Implementation: typescript, radix themes, dark/light mode, `npx blah serve`,
+> validate the state of all the tools at startup.

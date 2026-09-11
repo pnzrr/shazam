@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": true,
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo-server.json"
+  },
+  "include": ["src/server/**/*.ts", "src/shared/**/*.ts"]
+}
