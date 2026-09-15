@@ -1,4 +1,4 @@
-import type { AgentId } from '../../shared/types.js'
+import type { AgentId, ShazamIntent } from '../../shared/types.js'
 import { loadConfig } from '../config.js'
 import { codexTrustArgs, trustClaudeWorkspace } from './trust.js'
 
@@ -76,11 +76,15 @@ export interface PromptContext {
   pr: { url: string; number: number; repo: { nameWithOwner: string } }
   path: string
   branch: string
+  /** Which of the configured prompts to open with. */
+  intent: ShazamIntent
 }
 
 export function buildPrompt(ctx: PromptContext): string {
-  const { shazamPrompt } = loadConfig()
-  return shazamPrompt
+  const config = loadConfig()
+  const template =
+    ctx.intent === 'address' ? config.shazamChangesPrompt : config.shazamPrompt
+  return template
     .replaceAll('{url}', ctx.pr.url)
     .replaceAll('{number}', String(ctx.pr.number))
     .replaceAll('{repo}', ctx.pr.repo.nameWithOwner)

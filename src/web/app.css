@@ -264,6 +264,18 @@ body,
   margin-right: var(--space-1);
 }
 
+/*
+ * The wrench next to the "changes" chip. It is a button among badges, so it
+ * takes the chip row's height rather than a button's, and keeps the solid
+ * accent fill of the Shazam button it is a shortcut to.
+ */
+.wrench-chip {
+  height: var(--line-height-2);
+  width: var(--line-height-2);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
 /* --- reviewers ---------------------------------------------------------- */
 
 .reviewers-popover {

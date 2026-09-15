@@ -3,25 +3,28 @@ import { Button, DropdownMenu, Flex, Tooltip } from '@radix-ui/themes'
 import { useState } from 'react'
 import type { AgentId, AgentSession, PullRequestItem } from '../../shared/types.js'
 import { api } from '../lib/api.js'
+import { type AgentInfo, primaryAgent } from './agents.js'
 import { useToast } from './Toaster.js'
 
 export interface ShazamButtonProps {
   pr: PullRequestItem
-  agents: { id: AgentId; label: string; available: boolean }[]
+  agents: AgentInfo[]
+  /** Config's preference; the primary half opens this one where it exists. */
+  defaultAgent: AgentId
   onLaunched: (session: AgentSession) => void
 }
 
 /**
- * Split button: the primary half launches the first available agent, the
- * caret offers the rest. New agents come from the health report, so adding
- * one is a server-side change only.
+ * Split button: the primary half launches the configured agent, the caret
+ * offers the rest. New agents come from the health report, so adding one is a
+ * server-side change only.
  */
-export function ShazamButton({ pr, agents, onLaunched }: ShazamButtonProps) {
+export function ShazamButton({ pr, agents, defaultAgent, onLaunched }: ShazamButtonProps) {
   const [busy, setBusy] = useState(false)
   const toast = useToast()
 
   const available = agents.filter((a) => a.available)
-  const primary = available[0]
+  const primary = primaryAgent(agents, defaultAgent)
 
   const launch = async (agent: AgentId) => {
     setBusy(true)

@@ -3,7 +3,7 @@ import { chmodSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import type { IPty } from 'node-pty'
-import type { AgentId, AgentSession, PtyServerMessage } from '../../shared/types.js'
+import type { AgentId, AgentSession, PtyServerMessage, ShazamIntent } from '../../shared/types.js'
 import { buildPrompt, getAdapter, type LaunchContext } from './adapter.js'
 import { loadConfig } from '../config.js'
 import { ensureWorktree } from './worktree.js'
@@ -43,6 +43,8 @@ export interface ShazamPr {
 export interface ShazamRequest {
   pr: ShazamPr
   agent: AgentId
+  /** Which opening prompt the agent gets. Defaults to reading and waiting. */
+  intent: ShazamIntent
 }
 
 /**
@@ -167,7 +169,7 @@ export class SessionManager {
 
       const adapter = getAdapter(agent)
       const launch: LaunchContext = {
-        prompt: buildPrompt({ pr, path, branch }),
+        prompt: buildPrompt({ pr, path, branch, intent: req.intent }),
         cwd: path,
         gitRoot,
         trustWorktrees: loadConfig().trustWorktrees,

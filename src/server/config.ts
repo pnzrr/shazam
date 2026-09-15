@@ -42,6 +42,28 @@ const configSchema = z.object({
         'making any changes.',
       ].join('\n'),
     ),
+  /**
+   * Used instead of `shazamPrompt` when a session is opened from the wrench on
+   * a pull request whose review asked for changes. Same substitutions.
+   */
+  shazamChangesPrompt: z
+    .string()
+    .default(
+      [
+        'You are working on pull request {url}, where a reviewer has requested changes.',
+        '',
+        'Start by loading it: `gh pr view {url} --comments` and `gh pr diff {url}`.',
+        'Read every review comment and every requested change.',
+        '',
+        'You are in a git worktree at {path}, checked out to branch `{branch}` of {repo}.',
+        'This worktree is dedicated to PR #{number}; you can commit and push from here.',
+        '',
+        'Work through the requested changes one at a time. Fix what is right to fix.',
+        'Where you think the reviewer is wrong, do not quietly comply - say so and make',
+        'the argument. Either way, respond to the thread on GitHub with what you did, or',
+        'why you did not. Tell me what you plan to do before you push anything.',
+      ].join('\n'),
+    ),
 })
 
 export type Config = z.infer<typeof configSchema> & {

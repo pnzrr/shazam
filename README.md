@@ -131,6 +131,15 @@ Whatever survives both is what the button sends, and the tooltip names it. The
 comment dialog offers only those methods too. If a repository has disabled all
 three, Merge is greyed out rather than letting you click into a failure.
 
+A PR whose review asked for changes grows a **wrench** next to the `changes`
+chip, in the Shazam button's own fill because it is a shortcut to the same
+thing: it opens the same worktree with the default agent, but on
+`shazamChangesPrompt` instead of `shazamPrompt` — read every review comment and
+requested change, fix what is right to fix, argue where the reviewer is wrong
+rather than quietly complying, and reply on the thread either way. It is only
+rendered where there is something to answer, so a wrench on a tile is itself
+the signal that a reviewer is waiting on you.
+
 Every PR row also has a **Shazam** button. Owner filter chips in the header are
 derived from whatever is on screen, so they need no configuration.
 
@@ -192,8 +201,9 @@ branch, in one click:
 A fork PR's branch is namespaced `pr-<n>-<branch>` so a fork branch called `main`
 cannot clobber the base repo's `main`.
 
-The split button's caret picks the other agent. Agents that were not found on
-`PATH` at startup are disabled rather than hidden.
+The primary half opens `defaultAgent`; the caret picks the other one. Agents
+that were not found on `PATH` at startup are disabled rather than hidden, and
+`defaultAgent` falls back to whichever one is installed.
 
 ### Workspace trust
 
@@ -230,12 +240,18 @@ Optional, at `~/.shazam/config.json`:
   "perColumnLimit": 100,
   "trustWorktrees": true,
   "terminalFontSize": 20,
-  "shazamPrompt": "You are working on pull request {url}. ..."
+  "shazamPrompt": "You are working on pull request {url}. ...",
+  "shazamChangesPrompt": "You are working on pull request {url}, where a reviewer has requested changes. ..."
 }
 ```
 
-`shazamPrompt` substitutes `{url}`, `{number}`, `{repo}`, `{path}` and
-`{branch}`.
+`shazamPrompt` is what a plain Shazam opens with; `shazamChangesPrompt` is what
+the wrench opens with. Both substitute `{url}`, `{number}`, `{repo}`, `{path}`
+and `{branch}`.
+
+`defaultAgent` is the agent both of them open — the primary half of the Shazam
+split button, and the wrench. Where that agent is not installed, they fall back
+to whichever one is.
 
 ## How it works
 

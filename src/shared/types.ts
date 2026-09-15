@@ -226,6 +226,8 @@ export interface HealthReport {
   tools: ToolCheck[]
   /** Agents that actually launched their preflight check, for the shazam menu. */
   agents: { id: AgentId; label: string; available: boolean }[]
+  /** Config's preferred agent; what a plain Shazam click opens. */
+  defaultAgent: AgentId
   pollIntervalMs: number
   terminalFontSize: number
   defaultMergeMethod: MergeMethod
@@ -247,6 +249,13 @@ export interface ActionResult {
 // ---------------------------------------------------------------------------
 
 export type AgentId = 'claude' | 'codex'
+
+/**
+ * What a session is being opened to do, which in practice is a choice of
+ * opening prompt. `brief` reads the pull request and waits for instruction;
+ * `address` goes straight at the changes a reviewer asked for.
+ */
+export type ShazamIntent = 'brief' | 'address'
 
 export type SessionStatus = 'preparing' | 'running' | 'exited' | 'failed'
 

@@ -105,6 +105,7 @@ export function App() {
       viewer: data?.viewer ?? '',
       agents: health?.agents ?? [],
       defaultMergeMethod: health?.defaultMergeMethod ?? 'squash',
+      defaultAgent: health?.defaultAgent ?? 'claude',
       onSessionLaunched: (session: AgentSession) => sessions.add(session),
       onActioned: (itemId: string) => {
         setDismissed((current) => new Map(current).set(itemId, Date.now() + DISMISS_MS))
@@ -114,7 +115,15 @@ export function App() {
       lastClickedId,
       onTileClicked: setLastClickedId,
     }),
-    [data?.viewer, health?.agents, health?.defaultMergeMethod, sessions, dashboard, lastClickedId],
+    [
+      data?.viewer,
+      health?.agents,
+      health?.defaultMergeMethod,
+      health?.defaultAgent,
+      sessions,
+      dashboard,
+      lastClickedId,
+    ],
   )
 
   const filter = (items: DashboardItem[]) => {

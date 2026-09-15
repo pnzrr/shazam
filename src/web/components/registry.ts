@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type {
+  AgentId,
   AgentSession,
   ColumnId,
   DashboardData,
@@ -14,6 +15,8 @@ export interface ColumnContext {
   agents: HealthReport['agents']
   /** Merge method the primary Merge click uses without asking. */
   defaultMergeMethod: MergeMethod
+  /** Agent a plain Shazam click opens, from config. */
+  defaultAgent: AgentId
   onSessionLaunched: (session: AgentSession) => void
   /**
    * Called with the item's id after an action that changes GitHub state. It

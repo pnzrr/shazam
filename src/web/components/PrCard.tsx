@@ -3,6 +3,7 @@ import { Card, Flex, Link, Text, Tooltip } from '@radix-ui/themes'
 import type { AgentSession, PullRequestItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
 import { ApproveButton } from './ApproveButton.js'
+import { FixChangesButton } from './FixChangesButton.js'
 import { MergeButton } from './MergeButton.js'
 import { ReviewersButton } from './ReviewersButton.js'
 import { ShazamButton } from './ShazamButton.js'
@@ -63,6 +64,14 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
           <DraftChip isDraft={pr.isDraft} />
           <ChecksChip state={pr.checks} prUrl={pr.url} />
           <ReviewChip decision={pr.reviewDecision} />
+          {pr.reviewDecision === 'changes_requested' ? (
+            <FixChangesButton
+              pr={pr}
+              agents={ctx.agents}
+              defaultAgent={ctx.defaultAgent}
+              onLaunched={onLaunched}
+            />
+          ) : null}
           <ConflictChip state={pr.mergeable} prUrl={pr.url} />
           <CommentsChip
             count={pr.commentCount}
@@ -76,7 +85,12 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
 
         <Flex gap="2" align="center" justify="end">
           {action === 'merge' ? <ReviewersButton pr={pr} onChanged={ctx.onChanged} /> : null}
-          <ShazamButton pr={pr} agents={ctx.agents} onLaunched={onLaunched} />
+          <ShazamButton
+            pr={pr}
+            agents={ctx.agents}
+            defaultAgent={ctx.defaultAgent}
+            onLaunched={onLaunched}
+          />
           {action === 'merge' ? (
             <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />
           ) : null}

@@ -8,6 +8,7 @@ import type {
   MergeMethod,
   PullRequestItem,
   ReviewersPanel,
+  ShazamIntent,
 } from '../../shared/types.js'
 import { readToken } from './token.js'
 
@@ -73,9 +74,10 @@ export const api = {
   closeIssue: (url: string, comment?: string) =>
     post<ActionResult>('/api/issue/close', { url, comment }),
   sessions: () => request<AgentSession[]>('/api/sessions'),
-  shazam: (pr: PullRequestItem, agent: AgentId) =>
+  shazam: (pr: PullRequestItem, agent: AgentId, intent: ShazamIntent = 'brief') =>
     post<AgentSession>('/api/sessions', {
       agent,
+      intent,
       pr: {
         url: pr.url,
         number: pr.number,

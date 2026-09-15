@@ -40,6 +40,7 @@ program
       config.pollIntervalMs,
       config.terminalFontSize,
       config.defaultMergeMethod,
+      config.defaultAgent,
     )
     printPreflight(preflight)
 

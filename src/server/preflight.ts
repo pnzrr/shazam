@@ -86,6 +86,7 @@ export async function runPreflight(
   pollIntervalMs: number,
   terminalFontSize: number,
   defaultMergeMethod: MergeMethod,
+  defaultAgent: AgentId,
 ): Promise<PreflightResult> {
   const [tools, auth] = await Promise.all([
     Promise.all(TOOLS.map(checkTool)),
@@ -111,6 +112,7 @@ export async function runPreflight(
     viewer: auth.viewer,
     tools: all,
     agents,
+    defaultAgent,
     blockers,
     pollIntervalMs,
     terminalFontSize,
