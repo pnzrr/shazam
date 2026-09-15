@@ -34,8 +34,8 @@ Four columns, each sorted by last updated, descending:
 
 - **My pull requests** — open PRs you authored. Icons for CI state, review
   decision, merge conflicts, unresolved review threads, and diff size. A
-  **Merge** button, enabled when the PR is approved, mergeable, not a draft,
-  and not red on CI. A run still in progress does not block it — the button
+  **Merge** button, enabled when the PR is approved, not a draft, and not one
+  GitHub would refuse. CI that is not green does not block it — the button
   turns amber and reads **Merge !** so you know what you are doing.
 - **Waiting on my review** — PRs where review is requested from you and you have
   not reviewed yet (`review-requested:@me -reviewed-by:@me`). Same status icons,
@@ -57,6 +57,22 @@ The refresh alone is not enough: GitHub's search index is eventually
 consistent, so a PR you just approved keeps matching `-reviewed-by:@me` for a
 while and would sit there looking untouched. The row is hidden for 90 seconds
 and comes back if the action did not in fact remove it.
+
+### When Merge is live
+
+A red check is not on its own a reason to grey the button out. Most CI failures
+on an approved PR are a lint or preview job that no branch rule requires, and
+GitHub merges those without complaint; a failure that a rule *does* require
+looks identical in the check rollup. What tells them apart is GitHub's own
+`mergeStateStatus` — its answer to "would you take this merge" — and only
+`blocked`, `behind`, `dirty` and `draft` disable the button. `unknown` does
+not: GitHub computes the field lazily, so a PR that is perfectly fine answers
+`unknown` simply because nobody asked recently.
+
+It is read in a second request rather than with the dashboard, and only for the
+PRs that are approved and not conflicting. Asking for it inline makes GitHub
+compute a trial merge for every row in the response, which reliably times the
+whole query out — a 502, or "we couldn't respond to your request in time".
 
 ### Merge methods
 
@@ -83,6 +99,37 @@ Every tile is itself a link: clicking anywhere that is not a button or a chip
 opens the PR or issue on GitHub. The status chips deep-link into the relevant
 tab instead — checks to `/checks`, the conflict marker to GitHub's conflict
 resolver at `/conflicts`, and the `+/-` diff stat to `/files`.
+
+### Reading comments without leaving
+
+The comment chip is the exception: it opens the conversation in a scrollable
+overlay at the pointer, half the window wide, rather than sending you to
+GitHub. On a PR that is the issue comments, each submitted review's own body,
+and every inline review comment, flattened into one list in the order they were
+written — which is how the page reads — with the file name on the ones that
+hang off the diff.
+
+Each comment's timestamp is a link to that comment's own anchor on GitHub, so
+"take me to this one" is one click from the overlay rather than a scroll
+through the thread.
+
+Bodies come back as `bodyHTML` — the comment as GitHub itself renders it, so
+GFM and any HTML the author wrote inline arrive already handled. That is what
+makes a Cloudflare Pages deployment table or a `<details>` block read as the
+table and the block rather than as its source. GitHub sanitizes what it
+renders; shazam runs it through DOMPurify again before it goes near the
+document, and rewrites every link in a comment to open in a new tab so none of
+them can navigate the dashboard — and any running agent session — away.
+
+The next click anywhere dismisses the overlay and does nothing else. Swallowing
+that click matters, because the dashboard is a field of click targets and a
+dismissal that fell through would open a tile on GitHub — or press Merge,
+Approve or Close — on its way out. Escape closes it too, and the link in its
+header is the way out to the full thread.
+
+Comments are fetched on the click, never on the poll, so a hundred rows cost
+one request only when you actually read one. The server holds each conversation
+for 30 seconds, which is what makes opening the same chip twice free.
 
 ## Shazam
 
@@ -158,8 +205,9 @@ Optional, at `~/.shazam/config.json`:
   in `gh auth status`. shazam never stores a GitHub credential of its own.
 - **Polling.** The server polls GitHub on an interval into an in-memory cache
   and the browser reads that cache, so extra tabs and manual refreshes cost no
-  API quota. One GraphQL request covers all four columns. Remaining rate limit
-  is in the header.
+  API quota. One GraphQL request covers all four columns, plus a second for the
+  merge states of the PRs that could merge. Remaining rate limit is in the
+  header.
 - **Access control.** The dashboard can spawn shells, so `/api` and `/ws` require
   a token (`~/.shazam/token`, mode 0600) and a loopback `Origin`. The server
   binds `127.0.0.1` only.

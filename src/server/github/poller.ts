@@ -1,7 +1,8 @@
 import { GraphqlResponseError } from '@octokit/graphql'
-import type { DashboardData, PullRequestItem } from '../../shared/types.js'
+import { type DashboardData, type PullRequestItem, mergeStateBlocks } from '../../shared/types.js'
 import { branchMergeMethods } from './branchRules.js'
 import { getGraphqlClient, resetClient } from './client.js'
+import { applyMergeStates } from './mergeState.js'
 import { normalizeIssue, normalizePr, type RawIssue, type RawPr } from './normalize.js'
 import { DASHBOARD_QUERY, SEARCH_QUERIES } from './queries.js'
 
@@ -45,7 +46,7 @@ export async function applyBranchRules(prs: PullRequestItem[]): Promise<void> {
       !pr.isDraft &&
       pr.reviewDecision === 'approved' &&
       pr.mergeable !== 'conflicting' &&
-      pr.checks !== 'failure' &&
+      !mergeStateBlocks(pr.mergeState) &&
       pr.allowedMergeMethods.length > 0,
   )
 
@@ -99,6 +100,9 @@ export async function fetchDashboard(limit: number): Promise<DashboardData> {
       .sort(byUpdatedDesc),
   }
 
+  // Order matters: branch rules only narrow the methods of PRs that can still
+  // merge, and that set is not known until the merge states are in.
+  await applyMergeStates(columns.myPullRequests)
   await applyBranchRules(columns.myPullRequests)
 
   return {

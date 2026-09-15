@@ -60,7 +60,12 @@ export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext
         </Flex>
 
         <Flex gap="2" align="center" wrap="wrap">
-          <CommentsChip count={issue.commentCount} />
+          <CommentsChip
+            count={issue.commentCount}
+            repo={issue.repo.nameWithOwner}
+            number={issue.number}
+            url={issue.url}
+          />
           {issue.labels.slice(0, 3).map((label) => (
             <Badge key={label.name} size="1" radius="full" style={labelColors(label.color)}>
               {label.name}

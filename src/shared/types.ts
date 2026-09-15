@@ -10,6 +10,35 @@ export type ReviewDecision = 'approved' | 'changes_requested' | 'review_required
 
 export type MergeableState = 'mergeable' | 'conflicting' | 'unknown'
 
+/**
+ * GitHub's own verdict on whether the merge button would work, which is more
+ * than `mergeable` knows: `unstable` is a red or pending check that no rule
+ * requires - GitHub merges it happily - while `blocked` is one that a rule
+ * does require, and no amount of green elsewhere gets past it.
+ */
+export type MergeState =
+  | 'clean'
+  | 'unstable'
+  | 'has_hooks'
+  | 'blocked'
+  | 'behind'
+  | 'dirty'
+  | 'draft'
+  | 'unknown'
+
+/**
+ * The states GitHub would refuse a merge in. Everything else - including
+ * `unknown`, which is just GitHub still working it out - lets the button live.
+ */
+export const BLOCKING_MERGE_STATES = ['blocked', 'behind', 'dirty', 'draft'] as const satisfies
+  readonly MergeState[]
+
+export type BlockingMergeState = (typeof BLOCKING_MERGE_STATES)[number]
+
+export function mergeStateBlocks(state: MergeState): state is BlockingMergeState {
+  return (BLOCKING_MERGE_STATES as readonly MergeState[]).includes(state)
+}
+
 export interface RepoRef {
   /** e.g. "phasetwo/keycloak-orgs" */
   nameWithOwner: string
@@ -36,6 +65,8 @@ export interface PullRequestItem {
   checks: CheckState
   reviewDecision: ReviewDecision
   mergeable: MergeableState
+  /** Whether GitHub would take the merge, and if not, why. */
+  mergeState: MergeState
   /** Issue-level comments. */
   commentCount: number
   /** Unresolved inline review threads. */
@@ -67,6 +98,48 @@ export interface IssueItem {
 }
 
 export type DashboardItem = PullRequestItem | IssueItem
+
+// ---------------------------------------------------------------------------
+// Comments
+// ---------------------------------------------------------------------------
+
+/**
+ * `review` is a submitted review's own body (the "approved with a note" text);
+ * `review_comment` is one anchored to a line of the diff.
+ */
+export type CommentKind = 'comment' | 'review' | 'review_comment'
+
+export type ReviewState = 'approved' | 'changes_requested' | 'commented' | 'dismissed'
+
+export interface CommentItem {
+  id: string
+  kind: CommentKind
+  author: string | null
+  avatarUrl: string | null
+  /**
+   * The comment as GitHub itself renders it: GFM turned into HTML, with any
+   * HTML the author wrote inline already handled. Sanitized again in the
+   * browser before it is put in the document.
+   */
+  bodyHtml: string
+  createdAt: string
+  url: string
+  /** Set on `review` only. */
+  reviewState: ReviewState | null
+  /** File the thread hangs off; set on `review_comment` only. */
+  path: string | null
+  /** Set on `review_comment` only. */
+  isResolved: boolean | null
+}
+
+/** The conversation on one PR or issue, oldest first. */
+export interface CommentThread {
+  /** The PR or issue itself, for the "open on GitHub" escape hatch. */
+  url: string
+  comments: CommentItem[]
+  /** True when the conversation is longer than what we fetched. */
+  truncated: boolean
+}
 
 export interface RateLimit {
   remaining: number

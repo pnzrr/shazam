@@ -140,19 +140,18 @@ export function normalizePr(raw: RawPr): PullRequestItem {
     checks,
     reviewDecision: decision,
     mergeable: merge,
+    // Too expensive to ask for in the dashboard query; applyMergeStates fills
+    // it in afterwards for the few PRs whose Merge button is otherwise live.
+    mergeState: 'unknown',
     commentCount: raw.comments.totalCount,
     unresolvedThreadCount: raw.reviewThreads.nodes.filter((n) => n && !n.isResolved).length,
     changedFiles: raw.changedFiles,
     additions: raw.additions,
     deletions: raw.deletions,
-    // GitHub has no single "viewer can merge" field without preview headers, so
-    // we approximate it: approved, no conflicts, CI not red, not a draft.
-    canMerge:
-      !raw.isDraft &&
-      decision === 'approved' &&
-      merge === 'mergeable' &&
-      checks !== 'failure' &&
-      checks !== 'pending',
+    // Approved, no conflicts, not a draft. A red check is deliberately not
+    // disqualifying on its own: unless a branch rule requires that check,
+    // GitHub merges it. applyMergeStates refines this with GitHub's own answer.
+    canMerge: !raw.isDraft && decision === 'approved' && merge !== 'conflicting',
     allowedMergeMethods: allowedMergeMethods(raw.repository),
   }
 }

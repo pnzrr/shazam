@@ -2,6 +2,7 @@ import type {
   ActionResult,
   AgentId,
   AgentSession,
+  CommentThread,
   DashboardData,
   HealthReport,
   MergeMethod,
@@ -53,6 +54,10 @@ export const api = {
   health: () => request<HealthReport>('/api/health'),
   dashboard: () => request<DashboardData>('/api/dashboard'),
   refresh: () => post<DashboardData>('/api/dashboard/refresh'),
+  comments: (repo: string, number: number) =>
+    request<CommentThread>(
+      `/api/comments?repo=${encodeURIComponent(repo)}&number=${encodeURIComponent(number)}`,
+    ),
   merge: (url: string, method: MergeMethod, body?: string) =>
     post<ActionResult>('/api/pr/merge', { url, method, body }),
   approve: (url: string, body?: string) => post<ActionResult>('/api/pr/approve', { url, body }),

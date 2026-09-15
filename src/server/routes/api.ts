@@ -5,6 +5,7 @@ import { approvePullRequest } from '../actions/approve.js'
 import { closeIssue } from '../actions/close.js'
 import { mergePullRequest } from '../actions/merge.js'
 import type { SessionManager } from '../agent/sessions.js'
+import { getComments } from '../github/comments.js'
 import type { DashboardPoller } from '../github/poller.js'
 
 const repoRefSchema = z.object({ nameWithOwner: z.string().min(1), url: z.string().url() })
@@ -31,6 +32,11 @@ const approveSchema = z.object({
   body: z.string().max(4000).optional(),
 })
 
+const commentsSchema = z.object({
+  repo: z.string().regex(/^[^/\s]+\/[^/\s]+$/, 'Expected owner/name'),
+  number: z.coerce.number().int().positive(),
+})
+
 const closeIssueSchema = z.object({
   url: z.string().url(),
   comment: z.string().max(4000).optional(),
@@ -53,6 +59,20 @@ export function registerApiRoutes(app: FastifyInstance, deps: ApiDeps): void {
   })
 
   app.post('/api/dashboard/refresh', async () => poller.refresh())
+
+  // Read on demand from a comment chip, not on the poll: the dashboard's one
+  // request per minute should not grow with how chatty the repositories are.
+  app.get('/api/comments', async (request, reply) => {
+    const parsed = commentsSchema.safeParse(request.query)
+    if (!parsed.success) return reply.code(400).send({ ok: false, message: 'Invalid request' })
+
+    try {
+      return await getComments(parsed.data.repo, parsed.data.number)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return reply.code(502).send({ ok: false, message })
+    }
+  })
 
   app.post('/api/pr/merge', async (request, reply) => {
     const parsed = mergeSchema.safeParse(request.body)

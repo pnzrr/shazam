@@ -1,7 +1,12 @@
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { AlertDialog, Button, Callout, Flex, Select, Text, TextArea } from '@radix-ui/themes'
 import { useState } from 'react'
-import type { MergeMethod, PullRequestItem } from '../../shared/types.js'
+import {
+  type BlockingMergeState,
+  type MergeMethod,
+  type PullRequestItem,
+  mergeStateBlocks,
+} from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { SplitActionButton } from './SplitActionButton.js'
 import { useToast } from './Toaster.js'
@@ -18,16 +23,26 @@ const METHOD_LABEL: Record<MergeMethod, string> = {
   rebase: 'Rebase and merge',
 }
 
+const MERGE_STATE_REASON: Record<BlockingMergeState, string> = {
+  blocked: 'GitHub is blocking this merge - something a branch rule requires has not passed',
+  behind: 'The branch is behind its base, which this branch requires it not to be',
+  dirty: 'Has merge conflicts',
+  draft: 'This pull request is still a draft',
+}
+
 /**
- * Pending checks deliberately do not block: waiting for a green tick before you
- * can even click is the slow path, and GitHub will refuse the merge itself if a
- * required check has not finished. The button warns instead.
+ * CI that is not green deliberately does not block. A run still in progress may
+ * yet pass, and a red one that no branch rule requires is one GitHub merges
+ * without complaint - which is the common case for a lint or preview job. What
+ * decides is `mergeState`, GitHub's own answer to "would you take this merge",
+ * so a check that genuinely stands in the way comes back as `blocked`. Short of
+ * that the button stays live and warns.
  */
 function blockedReason(pr: PullRequestItem): string | null {
   if (pr.isDraft) return 'This pull request is still a draft'
   if (pr.reviewDecision !== 'approved') return 'Not approved yet'
   if (pr.mergeable === 'conflicting') return 'Has merge conflicts'
-  if (pr.checks === 'failure') return 'Checks are failing'
+  if (mergeStateBlocks(pr.mergeState)) return MERGE_STATE_REASON[pr.mergeState]
   if (pr.allowedMergeMethods.length === 0) {
     return 'This repository has every merge method disabled'
   }
@@ -80,23 +95,27 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
     }
   }
 
+  // Amber for anything CI has not signed off on - failing as well as running.
+  // Neither blocks any more, so the button is what has to say so.
   const checksRunning = pr.checks === 'pending'
+  const checksRed = pr.checks === 'failure'
+  const warn = checksRunning || checksRed
 
   return (
     <>
       <SplitActionButton
         label="Merge"
         suffix={
-          checksRunning ? (
+          warn ? (
             <Text weight="bold" aria-hidden>
               {' !'}
             </Text>
           ) : null
         }
-        color={checksRunning ? 'amber' : 'green'}
+        color={warn ? 'amber' : 'green'}
         primaryTooltip={
-          checksRunning
-            ? `Checks are still running - ${METHOD_LABEL[usableMethod].toLowerCase()} #${pr.number} anyway`
+          warn
+            ? `${checksRed ? 'Checks are failing' : 'Checks are still running'}, but no branch rule requires them - ${METHOD_LABEL[usableMethod].toLowerCase()} #${pr.number} anyway`
             : `${METHOD_LABEL[usableMethod]} #${pr.number} now`
         }
         busy={busy}
@@ -120,12 +139,16 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
           </AlertDialog.Title>
           <AlertDialog.Description size="2">{pr.title}</AlertDialog.Description>
 
-          {checksRunning ? (
+          {warn ? (
             <Callout.Root color="amber" size="1" variant="surface" mt="3">
               <Callout.Icon>
                 <ExclamationTriangleIcon />
               </Callout.Icon>
-              <Callout.Text>CI checks are still running on this pull request.</Callout.Text>
+              <Callout.Text>
+                {checksRed
+                  ? 'CI checks are failing on this pull request. No branch rule requires them, so GitHub will take the merge.'
+                  : 'CI checks are still running on this pull request.'}
+              </Callout.Text>
             </Callout.Root>
           ) : null}
 

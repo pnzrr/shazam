@@ -63,7 +63,13 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
           <ChecksChip state={pr.checks} prUrl={pr.url} />
           <ReviewChip decision={pr.reviewDecision} />
           <ConflictChip state={pr.mergeable} prUrl={pr.url} />
-          <CommentsChip count={pr.commentCount} threads={pr.unresolvedThreadCount} />
+          <CommentsChip
+            count={pr.commentCount}
+            threads={pr.unresolvedThreadCount}
+            repo={pr.repo.nameWithOwner}
+            number={pr.number}
+            url={pr.url}
+          />
           <DiffStat additions={pr.additions} deletions={pr.deletions} prUrl={pr.url} />
         </Flex>
 

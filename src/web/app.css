@@ -42,8 +42,12 @@ body,
  * size from --scaling, so multiplying the tokens here keeps the theme's own
  * scaling preference intact and lifts line heights in step, which plain
  * font-size overrides would not.
+ *
+ * The comments overlay is portalled out of the grid but is read at the same
+ * distance as the rows it belongs to, so it takes the same scale.
  */
-.grid {
+.grid,
+.comments-popover {
   --list-font-scale: 1.25;
   --font-size-1: calc(12px * var(--scaling) * var(--list-font-scale));
   --font-size-2: calc(14px * var(--scaling) * var(--list-font-scale));
@@ -104,6 +108,160 @@ body,
   color: inherit;
   text-decoration: none;
   display: inline-flex;
+}
+
+/* The comment chip opens an overlay, so it is a button that looks like a chip. */
+.chip-button {
+  all: unset;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.chip-button:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+  border-radius: var(--radius-6);
+}
+
+/* --- comments overlay --------------------------------------------------- */
+
+/* Half the window: comments carry code blocks and tables, and a narrow
+ * column turns those into a horizontal scroll per paragraph. */
+.comments-popover {
+  width: 50vw;
+  min-width: 320px;
+  max-width: 92vw;
+}
+
+/*
+ * The list scrolls, not the popover: the header and its link out stay put
+ * while you read. Capped against the viewport so an overlay opened near the
+ * bottom of the screen is still a readable height.
+ */
+.comments-scroll {
+  max-height: 50vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: var(--space-2);
+}
+
+.comment-body {
+  min-width: 0;
+}
+
+/* --- rendered comment bodies -------------------------------------------- */
+
+/*
+ * GitHub hands us the comment already rendered, so this is a small stylesheet
+ * for arbitrary GFM: headings that do not shout, code that scrolls on its own
+ * rather than widening the overlay, and images that cannot overflow it.
+ */
+.comment-html {
+  font-size: var(--font-size-1);
+  line-height: var(--line-height-1);
+  overflow-wrap: anywhere;
+}
+
+.comment-html > :first-child {
+  margin-top: 0;
+}
+
+.comment-html > :last-child {
+  margin-bottom: 0;
+}
+
+.comment-html p,
+.comment-html ul,
+.comment-html ol,
+.comment-html blockquote,
+.comment-html pre,
+.comment-html table,
+.comment-html details {
+  margin: var(--space-2) 0;
+}
+
+/* A comment's own headings sit inside a list item, so they stay close to body
+ * size and earn their weight instead of their scale. */
+.comment-html h1,
+.comment-html h2,
+.comment-html h3,
+.comment-html h4,
+.comment-html h5,
+.comment-html h6 {
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-2);
+  font-weight: 600;
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.comment-html a {
+  color: var(--accent-11);
+}
+
+.comment-html code {
+  background: var(--gray-a3);
+  border-radius: var(--radius-1);
+  padding: 0 var(--space-1);
+  font-family: var(--code-font-family);
+  font-size: 0.9em;
+}
+
+/* Long log lines and diffs scroll inside their own block; without this they
+ * set the width of the whole overlay. */
+.comment-html pre {
+  background: var(--gray-a3);
+  border-radius: var(--radius-2);
+  padding: var(--space-2);
+  overflow-x: auto;
+}
+
+.comment-html pre code {
+  background: none;
+  padding: 0;
+  white-space: pre;
+}
+
+.comment-html blockquote {
+  border-left: 3px solid var(--gray-a6);
+  padding-left: var(--space-2);
+  color: var(--gray-11);
+}
+
+.comment-html ul,
+.comment-html ol {
+  padding-left: var(--space-4);
+}
+
+.comment-html img {
+  max-width: 100%;
+  height: auto;
+}
+
+.comment-html table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.comment-html th,
+.comment-html td {
+  border: 1px solid var(--gray-a6);
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+}
+
+.comment-html hr {
+  border: none;
+  border-top: 1px solid var(--gray-a6);
+}
+
+/* GitHub's own task-list markup, which arrives as a disabled checkbox. */
+.comment-html .task-list-item {
+  list-style: none;
+}
+
+.comment-html .task-list-item input {
+  margin-right: var(--space-1);
 }
 
 /* Long titles must wrap rather than push the timestamp off the card. */

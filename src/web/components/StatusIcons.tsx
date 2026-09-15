@@ -12,6 +12,7 @@ import {
 import { Badge, Flex, Text, Tooltip } from '@radix-ui/themes'
 import type { ReactNode } from 'react'
 import type { CheckState, MergeableState, ReviewDecision } from '../../shared/types.js'
+import { CommentsPopover } from './CommentsPopover.js'
 
 interface ChipProps {
   tooltip: string
@@ -100,19 +101,42 @@ export function ConflictChip({ state, prUrl }: { state: MergeableState; prUrl?: 
   )
 }
 
-export function CommentsChip({ count, threads = 0 }: { count: number; threads?: number }) {
+export interface CommentsChipProps {
+  count: number
+  threads?: number
+  /** owner/name and number identify the conversation to read. */
+  repo: string
+  number: number
+  /** The PR or issue, for the overlay's link out. */
+  url: string
+}
+
+/**
+ * The one chip that does not lead to GitHub: it opens the conversation in an
+ * overlay at the pointer, because reading three comments should not cost a tab.
+ */
+export function CommentsChip({ count, threads = 0, repo, number, url }: CommentsChipProps) {
   if (count === 0 && threads === 0) return null
-  const tooltip =
+  const counts =
     threads > 0
       ? `${count} comment${count === 1 ? '' : 's'}, ${threads} unresolved review thread${threads === 1 ? '' : 's'}`
       : `${count} comment${count === 1 ? '' : 's'}`
+
   return (
-    <Chip
-      tooltip={tooltip}
-      color={threads > 0 ? 'orange' : 'gray'}
-      icon={<ChatBubbleIcon />}
-      label={String(threads > 0 ? threads : count)}
-    />
+    <CommentsPopover repo={repo} number={number} url={url}>
+      <button type="button" className="chip-button" aria-label={`${counts} - read them`}>
+        {/* Inside the button, not around it: the popover's trigger has to be
+            the button itself, and Tooltip hands its ref to its own content. */}
+        <Tooltip content={`${counts} - click to read them`}>
+          <Badge color={threads > 0 ? 'orange' : 'gray'} variant="soft" radius="full" size="1">
+            <Flex align="center" gap="1">
+              <ChatBubbleIcon />
+              <Text size="1">{String(threads > 0 ? threads : count)}</Text>
+            </Flex>
+          </Badge>
+        </Tooltip>
+      </button>
+    </CommentsPopover>
   )
 }
 
