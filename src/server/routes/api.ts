@@ -4,9 +4,11 @@ import type { HealthReport } from '../../shared/types.js'
 import { approvePullRequest } from '../actions/approve.js'
 import { closeIssue } from '../actions/close.js'
 import { mergePullRequest } from '../actions/merge.js'
+import { editReviewers } from '../actions/reviewers.js'
 import type { SessionManager } from '../agent/sessions.js'
 import { getComments } from '../github/comments.js'
 import type { DashboardPoller } from '../github/poller.js'
+import { fetchReviewers } from '../github/reviewers.js'
 
 const repoRefSchema = z.object({ nameWithOwner: z.string().min(1), url: z.string().url() })
 
@@ -42,6 +44,22 @@ const closeIssueSchema = z.object({
   comment: z.string().max(4000).optional(),
 })
 
+const repoNumberSchema = z.object({
+  repo: z.string().regex(/^[^/\s]+\/[^/\s]+$/, 'Expected owner/name'),
+  number: z.coerce.number().int().positive(),
+})
+
+/** A login, or "org/team". Anything else is not something gh can be handed. */
+const loginSchema = z.string().regex(/^[A-Za-z0-9-]+(\/[A-Za-z0-9._-]+)?$/)
+
+const editReviewersSchema = z
+  .object({
+    url: z.string().url(),
+    add: z.array(loginSchema).max(20).default([]),
+    remove: z.array(loginSchema).max(20).default([]),
+  })
+  .refine((v) => v.add.length + v.remove.length > 0, 'Nothing to change')
+
 export interface ApiDeps {
   poller: DashboardPoller
   sessions: SessionManager
@@ -72,6 +90,29 @@ export function registerApiRoutes(app: FastifyInstance, deps: ApiDeps): void {
       const message = err instanceof Error ? err.message : String(err)
       return reply.code(502).send({ ok: false, message })
     }
+  })
+
+  app.get('/api/pr/reviewers', async (request, reply) => {
+    const parsed = repoNumberSchema.extend({ q: z.string().max(100).optional() }).safeParse(request.query)
+    if (!parsed.success) return reply.code(400).send({ ok: false, message: 'Invalid request' })
+
+    try {
+      return await fetchReviewers(parsed.data.repo, parsed.data.number, parsed.data.q)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return reply.code(502).send({ ok: false, message })
+    }
+  })
+
+  app.post('/api/pr/reviewers', async (request, reply) => {
+    const parsed = editReviewersSchema.safeParse(request.body)
+    if (!parsed.success) return reply.code(400).send({ ok: false, message: 'Invalid request' })
+
+    const result = await editReviewers(parsed.data.url, parsed.data.add, parsed.data.remove)
+    // Requesting a review is what turns reviewDecision into "review required",
+    // so the row itself changes; do not wait for the next poll to show it.
+    if (result.ok) void poller.refresh()
+    return result
   })
 
   app.post('/api/pr/merge', async (request, reply) => {

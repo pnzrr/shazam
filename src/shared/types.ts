@@ -40,7 +40,7 @@ export function mergeStateBlocks(state: MergeState): state is BlockingMergeState
 }
 
 export interface RepoRef {
-  /** e.g. "phasetwo/keycloak-orgs" */
+  /** e.g. "octocat/hello-world" */
   nameWithOwner: string
   owner: string
   name: string
@@ -69,6 +69,8 @@ export interface PullRequestItem {
   mergeState: MergeState
   /** Issue-level comments. */
   commentCount: number
+  /** Reviewers who have been asked and have not answered. */
+  pendingReviewerCount: number
   /** Unresolved inline review threads. */
   unresolvedThreadCount: number
   changedFiles: number
@@ -98,6 +100,45 @@ export interface IssueItem {
 }
 
 export type DashboardItem = PullRequestItem | IssueItem
+
+// ---------------------------------------------------------------------------
+// Reviewers
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-person, unlike `ReviewDecision`, which is GitHub's single verdict for the
+ * whole pull request. `pending` is a request nobody has answered yet.
+ */
+export type ReviewerState =
+  | 'pending'
+  | 'approved'
+  | 'changes_requested'
+  | 'commented'
+  | 'dismissed'
+
+export interface ReviewerCandidate {
+  /** A login, or "org/team" for a team. */
+  login: string
+  name: string | null
+  avatarUrl: string | null
+}
+
+export interface Reviewer extends ReviewerCandidate {
+  isTeam: boolean
+  state: ReviewerState
+}
+
+/** Who is on a pull request, and who else could be asked. */
+export interface ReviewersPanel {
+  /** Everyone on it now: requested, or having already left a review. */
+  reviewers: Reviewer[]
+  /** Collaborators who could be asked, minus the author and the above. */
+  candidates: ReviewerCandidate[]
+  /** True when the repository has more collaborators than we fetched. */
+  truncated: boolean
+  /** Set when we cannot list collaborators at all, with the reason. */
+  note: string | null
+}
 
 // ---------------------------------------------------------------------------
 // Comments

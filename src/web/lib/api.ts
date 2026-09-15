@@ -7,6 +7,7 @@ import type {
   HealthReport,
   MergeMethod,
   PullRequestItem,
+  ReviewersPanel,
 } from '../../shared/types.js'
 import { readToken } from './token.js'
 
@@ -58,6 +59,14 @@ export const api = {
     request<CommentThread>(
       `/api/comments?repo=${encodeURIComponent(repo)}&number=${encodeURIComponent(number)}`,
     ),
+  reviewers: (repo: string, number: number, q?: string) =>
+    request<ReviewersPanel>(
+      `/api/pr/reviewers?repo=${encodeURIComponent(repo)}&number=${encodeURIComponent(number)}${
+        q ? `&q=${encodeURIComponent(q)}` : ''
+      }`,
+    ),
+  editReviewers: (url: string, add: string[], remove: string[]) =>
+    post<ActionResult>('/api/pr/reviewers', { url, add, remove }),
   merge: (url: string, method: MergeMethod, body?: string) =>
     post<ActionResult>('/api/pr/merge', { url, method, body }),
   approve: (url: string, body?: string) => post<ActionResult>('/api/pr/approve', { url, body }),

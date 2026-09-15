@@ -5,7 +5,7 @@ import { execa } from 'execa'
 import { loadConfig } from '../config.js'
 
 export interface WorktreeRequest {
-  /** Base repository, e.g. "phasetwo/keycloak-orgs". */
+  /** Base repository, e.g. "octocat/hello-world". */
   repo: string
   prNumber: number
   headRef: string

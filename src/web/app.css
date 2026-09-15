@@ -264,6 +264,55 @@ body,
   margin-right: var(--space-1);
 }
 
+/* --- reviewers ---------------------------------------------------------- */
+
+.reviewers-popover {
+  width: 340px;
+  max-width: 92vw;
+}
+
+/* Long collaborator lists scroll; the search box above them stays put. */
+.reviewers-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A login and a real name both want the room, so both may be truncated. */
+.reviewer-person {
+  min-width: 0;
+}
+
+.reviewer-row {
+  min-height: 28px;
+}
+
+.reviewer-add {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  color: var(--gray-12);
+}
+
+.reviewer-add:hover:not(:disabled) {
+  background: var(--accent-a3);
+}
+
+.reviewer-add:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: -2px;
+}
+
+.reviewer-add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Long titles must wrap rather than push the timestamp off the card. */
 .row-heading {
   min-width: 0;

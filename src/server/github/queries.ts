@@ -43,6 +43,9 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
     comments {
       totalCount
     }
+    reviewRequests(first: 0) {
+      totalCount
+    }
     reviewThreads(first: 50) {
       nodes {
         isResolved

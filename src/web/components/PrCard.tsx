@@ -4,6 +4,7 @@ import type { AgentSession, PullRequestItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
 import { ApproveButton } from './ApproveButton.js'
 import { MergeButton } from './MergeButton.js'
+import { ReviewersButton } from './ReviewersButton.js'
 import { ShazamButton } from './ShazamButton.js'
 import {
   ChecksChip,
@@ -74,6 +75,7 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
         </Flex>
 
         <Flex gap="2" align="center" justify="end">
+          {action === 'merge' ? <ReviewersButton pr={pr} onChanged={ctx.onChanged} /> : null}
           <ShazamButton pr={pr} agents={ctx.agents} onLaunched={onLaunched} />
           {action === 'merge' ? (
             <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />

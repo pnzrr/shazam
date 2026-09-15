@@ -42,6 +42,7 @@ export interface RawPr {
   additions: number
   deletions: number
   comments: { totalCount: number }
+  reviewRequests: { totalCount: number }
   reviewThreads: { nodes: ({ isResolved: boolean } | null)[] }
   commits: { nodes: ({ commit: { statusCheckRollup: { state: string } | null } } | null)[] }
 }
@@ -144,6 +145,7 @@ export function normalizePr(raw: RawPr): PullRequestItem {
     // it in afterwards for the few PRs whose Merge button is otherwise live.
     mergeState: 'unknown',
     commentCount: raw.comments.totalCount,
+    pendingReviewerCount: raw.reviewRequests.totalCount,
     unresolvedThreadCount: raw.reviewThreads.nodes.filter((n) => n && !n.isResolved).length,
     changedFiles: raw.changedFiles,
     additions: raw.additions,

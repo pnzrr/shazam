@@ -110,6 +110,7 @@ export function App() {
         setDismissed((current) => new Map(current).set(itemId, Date.now() + DISMISS_MS))
         void dashboard.refresh()
       },
+      onChanged: () => void dashboard.refresh(),
       lastClickedId,
       onTileClicked: setLastClickedId,
     }),

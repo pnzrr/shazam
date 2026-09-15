@@ -36,7 +36,9 @@ Four columns, each sorted by last updated, descending:
   decision, merge conflicts, unresolved review threads, and diff size. A
   **Merge** button, enabled when the PR is approved, not a draft, and not one
   GitHub would refuse. CI that is not green does not block it — the button
-  turns amber and reads **Merge !** so you know what you are doing.
+  turns amber and reads **Merge !** so you know what you are doing. A
+  **Request** button carries the count of reviewers who have not answered and
+  opens the reviewer panel.
 - **Waiting on my review** — PRs where review is requested from you and you have
   not reviewed yet (`review-requested:@me -reviewed-by:@me`). Same status icons,
   plus an **Approve** button.
@@ -57,6 +59,43 @@ The refresh alone is not enough: GitHub's search index is eventually
 consistent, so a PR you just approved keeps matching `-reviewed-by:@me` for a
 while and would sit there looking untouched. The row is hidden for 90 seconds
 and comes back if the action did not in fact remove it.
+
+### Reviewers
+
+Each of your pull requests carries a **Request** button. It shows how many
+reviewers have been asked and have not answered — amber with a count, grey when
+nobody is waiting — which is the answer to "is someone still sitting on this?"
+without opening anything. That count rides along on the dashboard poll: it is
+`reviewRequests.totalCount`, which costs nothing measurable next to the rest of
+the query.
+
+Riding on the poll means the count is only ever as fresh as the last one — a
+minute old at worst, and older whenever a poll fails, since the poller keeps
+serving the last good payload behind its error banner. The panel reads the pull
+request directly, so once it has told us the truth that number is kept even
+after the panel closes; otherwise the count would snap back to the stale one
+the instant you dismissed the thing that had just corrected it. The poll takes
+over again the moment its own number moves, which is how we know it has caught
+up — or that someone else has changed the reviewers since.
+
+Clicking it opens the panel GitHub keeps in a sidebar two clicks away:
+
+- Everyone on the PR now, each with their own state — waiting, approved,
+  changes, commented, dismissed. That is per-person, unlike the `approved` chip
+  on the tile, which is GitHub's single verdict for the whole PR.
+- A circular arrow next to anyone who has already answered, to ask them again.
+  A review goes stale the moment you push, and this is GitHub's own re-request.
+- An `×` to withdraw a request.
+- A search box over the repository's collaborators, matching on login *and*
+  real name, to ask someone new. One click requests the review.
+
+Collaborators come back a hundred at a time, which is the whole list for most
+repositories, so typing filters what is already loaded; only a repo with more
+than that goes back to GitHub as you type. Listing collaborators needs push
+access, so on a PR you opened against a repo you cannot push to the panel still
+shows who has reviewed and says why it cannot offer anyone new.
+
+Teams already requested are shown as `org/team`; the search offers people only.
 
 ### When Merge is live
 

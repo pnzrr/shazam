@@ -20,6 +20,12 @@ export interface ColumnContext {
    * refreshes and hides the row, which a refresh alone cannot always do.
    */
   onActioned: (itemId: string) => void
+  /**
+   * Refresh without hiding the row, for a change that alters a tile rather
+   * than removing it - requesting a review, say, which flips the PR's review
+   * decision but leaves it exactly where it was.
+   */
+  onChanged: () => void
   /** Item id of the tile touched most recently, marked across all columns. */
   lastClickedId: string | null
   /** Any click anywhere inside a tile reports it, buttons and chips included. */
