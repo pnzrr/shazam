@@ -29,7 +29,9 @@ interface ChipProps {
 
 function Chip({ tooltip, color, icon, label, href }: ChipProps) {
   const badge = (
-    <Badge className={cn('text-sm', CHIP_SOFT[color])}>
+    // A pinned height: icon-only chips otherwise collapse to the icon's own
+    // box and sit visibly smaller than their labeled neighbors.
+    <Badge className={cn('h-6.5 text-sm [&>svg]:size-4', CHIP_SOFT[color])}>
       {icon}
       {label}
     </Badge>
@@ -145,7 +147,9 @@ export function CommentsChip({ count, threads = 0, repo, number, url }: Comments
             the button itself, and the tooltip hands its ref to its own content. */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge className={cn('text-sm', CHIP_SOFT[threads > 0 ? 'orange' : 'gray'])}>
+            <Badge
+              className={cn('h-6.5 text-sm [&>svg]:size-4', CHIP_SOFT[threads > 0 ? 'orange' : 'gray'])}
+            >
               <MessageCircle />
               {String(threads > 0 ? threads : count)}
             </Badge>
