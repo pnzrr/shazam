@@ -7,7 +7,7 @@ import type { ColumnContext, ColumnDef } from './registry.js'
 export interface DashboardColumnProps {
   column: ColumnDef
   items: DashboardItem[]
-  /** Rows hidden by the owner filter, reported so the count is not confusing. */
+  /** Rows hidden by the filters, reported so the count is not confusing. */
   hiddenCount: number
   ctx: ColumnContext
 }
@@ -32,7 +32,7 @@ export function DashboardColumn({ column, items, hiddenCount, ctx }: DashboardCo
               <TooltipTrigger asChild>
                 <span className="text-xs text-muted-foreground">+{hiddenCount}</span>
               </TooltipTrigger>
-              <TooltipContent>{`${hiddenCount} hidden by the owner filter`}</TooltipContent>
+              <TooltipContent>{`${hiddenCount} hidden by your filters`}</TooltipContent>
             </Tooltip>
           ) : null}
           <Badge className="min-w-6 justify-center bg-accent px-1 text-accent-foreground tabular-nums">
