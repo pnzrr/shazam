@@ -155,11 +155,8 @@
  * scaling preference intact and lifts line heights in step, which plain
  * font-size overrides would not.
  *
- * The comments overlay is portalled out of the grid but is read at the same
- * distance as the rows it belongs to, so it takes the same scale.
  */
-.grid,
-.comments-popover {
+.grid {
   --list-font-scale: 1.25;
   --font-size-1: calc(12px * var(--scaling) * var(--list-font-scale));
   --font-size-2: calc(14px * var(--scaling) * var(--list-font-scale));
@@ -215,32 +212,6 @@
   color: var(--accent-11);
 }
 
-/* --- comments overlay --------------------------------------------------- */
-
-/* Half the window: comments carry code blocks and tables, and a narrow
- * column turns those into a horizontal scroll per paragraph. */
-.comments-popover {
-  width: 50vw;
-  min-width: 320px;
-  max-width: 92vw;
-}
-
-/*
- * The list scrolls, not the popover: the header and its link out stay put
- * while you read. Capped against the viewport so an overlay opened near the
- * bottom of the screen is still a readable height.
- */
-.comments-scroll {
-  max-height: 50vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: var(--space-2);
-}
-
-.comment-body {
-  min-width: 0;
-}
-
 /* --- rendered comment bodies -------------------------------------------- */
 
 /*
@@ -249,8 +220,8 @@
  * rather than widening the overlay, and images that cannot overflow it.
  */
 .comment-html {
-  font-size: var(--font-size-1);
-  line-height: var(--line-height-1);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   overflow-wrap: anywhere;
 }
 
@@ -269,7 +240,7 @@
 .comment-html pre,
 .comment-html table,
 .comment-html details {
-  margin: var(--space-2) 0;
+  margin: 0.5rem 0;
 }
 
 /* A comment's own headings sit inside a list item, so they stay close to body
@@ -280,30 +251,30 @@
 .comment-html h4,
 .comment-html h5,
 .comment-html h6 {
-  font-size: var(--font-size-2);
-  line-height: var(--line-height-2);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
   font-weight: 600;
-  margin: var(--space-3) 0 var(--space-1);
+  margin: 0.75rem 0 0.25rem;
 }
 
 .comment-html a {
-  color: var(--accent-11);
+  color: var(--primary);
 }
 
 .comment-html code {
-  background: var(--gray-a3);
-  border-radius: var(--radius-1);
-  padding: 0 var(--space-1);
-  font-family: var(--code-font-family);
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0 0.25rem;
+  font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
 /* Long log lines and diffs scroll inside their own block; without this they
  * set the width of the whole overlay. */
 .comment-html pre {
-  background: var(--gray-a3);
-  border-radius: var(--radius-2);
-  padding: var(--space-2);
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  border-radius: var(--radius);
+  padding: 0.5rem;
   overflow-x: auto;
 }
 
@@ -314,14 +285,22 @@
 }
 
 .comment-html blockquote {
-  border-left: 3px solid var(--gray-a6);
-  padding-left: var(--space-2);
-  color: var(--gray-11);
+  border-left: 3px solid var(--border);
+  padding-left: 0.5rem;
+  color: var(--muted-foreground);
 }
 
 .comment-html ul,
 .comment-html ol {
-  padding-left: var(--space-4);
+  padding-left: 1rem;
+}
+
+.comment-html ul {
+  list-style: disc;
+}
+
+.comment-html ol {
+  list-style: decimal;
 }
 
 .comment-html img {
@@ -337,14 +316,14 @@
 
 .comment-html th,
 .comment-html td {
-  border: 1px solid var(--gray-a6);
-  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
   text-align: left;
 }
 
 .comment-html hr {
   border: none;
-  border-top: 1px solid var(--gray-a6);
+  border-top: 1px solid var(--border);
 }
 
 /* GitHub's own task-list markup, which arrives as a disabled checkbox. */
@@ -353,56 +332,7 @@
 }
 
 .comment-html .task-list-item input {
-  margin-right: var(--space-1);
-}
-
-/* --- reviewers ---------------------------------------------------------- */
-
-.reviewers-popover {
-  width: 340px;
-  max-width: 92vw;
-}
-
-/* Long collaborator lists scroll; the search box above them stays put. */
-.reviewers-scroll {
-  max-height: 240px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* A login and a real name both want the room, so both may be truncated. */
-.reviewer-person {
-  min-width: 0;
-}
-
-.reviewer-row {
-  min-height: 28px;
-}
-
-.reviewer-add {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-2);
-  cursor: pointer;
-  color: var(--gray-12);
-}
-
-.reviewer-add:hover:not(:disabled) {
-  background: var(--accent-a3);
-}
-
-.reviewer-add:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: -2px;
-}
-
-.reviewer-add:disabled {
-  opacity: 0.5;
-  cursor: default;
+  margin-right: 0.25rem;
 }
 
 /* Long titles must wrap rather than push the timestamp off the card. */
