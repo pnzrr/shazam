@@ -4,11 +4,11 @@ import {
   CircleMinus,
   CircleX,
   Clock,
-  Ellipsis,
   FileText,
   MessageCircle,
-  Pencil,
   UserCheck,
+  UserPen,
+  UserSearch,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -87,16 +87,17 @@ export function ChecksChip({ state, prUrl }: { state: CheckState; prUrl?: string
 
 export function ReviewChip({ decision }: { decision: ReviewDecision }) {
   switch (decision) {
+    // Icon-only, and every glyph is a person: a review verdict is a human
+    // verdict, where the circled marks beside these belong to CI. The word
+    // lives in the tooltip.
     case 'approved':
       // Deliberately not the green circled check: that is CI's mark, and the
       // two chips sit side by side on a card.
-      return <Chip tooltip="Approved" color="blue" icon={<UserCheck />} label="approved" />
+      return <Chip tooltip="Approved" color="blue" icon={<UserCheck />} />
     case 'changes_requested':
-      return <Chip tooltip="Changes requested" color="red" icon={<Pencil />} label="changes" />
+      return <Chip tooltip="Changes requested" color="red" icon={<UserPen />} />
     case 'review_required':
-      return (
-        <Chip tooltip="Review required" color="amber" icon={<Ellipsis />} label="review" />
-      )
+      return <Chip tooltip="Review required" color="amber" icon={<UserSearch />} />
     default:
       return null
   }
