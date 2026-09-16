@@ -1,10 +1,4 @@
-import { Callout, Flex } from '@radix-ui/themes'
-import {
-  CheckCircledIcon,
-  Cross2Icon,
-  CrossCircledIcon,
-  InfoCircledIcon,
-} from '@radix-ui/react-icons'
+import { CircleCheck, CircleX, Info, X } from 'lucide-react'
 import {
   createContext,
   useCallback,
@@ -13,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { cn } from '@/lib/utils'
 
 type Tone = 'success' | 'error' | 'info'
 
@@ -27,12 +22,16 @@ const ToastContext = createContext<(message: string, tone?: Tone) => void>(() =>
 export const useToast = () => useContext(ToastContext)
 
 const ICONS: Record<Tone, ReactNode> = {
-  success: <CheckCircledIcon />,
-  error: <CrossCircledIcon />,
-  info: <InfoCircledIcon />,
+  success: <CircleCheck className="size-4" />,
+  error: <CircleX className="size-4" />,
+  info: <Info className="size-4" />,
 }
 
-const COLORS = { success: 'green', error: 'red', info: 'blue' } as const
+const COLORS: Record<Tone, string> = {
+  success: 'border-success/50 text-emerald-700 dark:text-success',
+  error: 'border-destructive/50 text-red-700 dark:text-red-400',
+  info: 'border-primary/50 text-primary',
+}
 
 let nextId = 1
 
@@ -58,22 +57,22 @@ export function Toaster({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <Flex direction="column" gap="2" className="toaster">
+      <div className="fixed right-4 bottom-4 z-50 flex max-w-[420px] flex-col gap-2">
         {toasts.map((toast) => (
-          <Callout.Root
+          <div
             key={toast.id}
-            color={COLORS[toast.tone]}
-            variant="surface"
-            size="1"
+            className={cn(
+              'flex cursor-pointer items-start gap-2 whitespace-pre-wrap rounded-lg border bg-card px-3 py-2 text-sm shadow-md',
+              COLORS[toast.tone],
+            )}
             onClick={() => dismiss(toast.id)}
-            className="toast"
           >
-            <Callout.Icon>{ICONS[toast.tone]}</Callout.Icon>
-            <Callout.Text>{toast.message}</Callout.Text>
-            <Cross2Icon className="toast-close" />
-          </Callout.Root>
+            <span className="mt-0.5 shrink-0">{ICONS[toast.tone]}</span>
+            <span className="flex-1">{toast.message}</span>
+            <X className="size-3.5 shrink-0 self-center opacity-40" />
+          </div>
         ))}
-      </Flex>
+      </div>
     </ToastContext.Provider>
   )
 }

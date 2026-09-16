@@ -259,80 +259,13 @@
 
 /* --- terminal dock ------------------------------------------------------ */
 
-.dock {
-  flex-shrink: 0;
-  border-top: 1px solid var(--gray-a6);
-  background: var(--color-panel-solid);
-  min-height: 0;
-}
-
-.dock-resizer {
-  height: 5px;
-  margin-top: -3px;
-  cursor: ns-resize;
-  flex-shrink: 0;
-}
-
-.dock-tabs {
-  border-bottom: 1px solid var(--gray-a4);
-  flex-shrink: 0;
-  overflow-x: auto;
-}
-
-.dock-tab {
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-2);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.dock-tab:hover {
-  background: var(--gray-a3);
-}
-
-.dock-tab.is-active {
-  background: var(--accent-a4);
-}
-
-.dock-note {
-  white-space: nowrap;
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .terminal-host {
   flex: 1 1 auto;
   min-height: 0;
-  padding: var(--space-2);
+  padding: 0.5rem;
   overflow: hidden;
 }
 
 .terminal-host .xterm {
   height: 100%;
-}
-
-/* --- toasts ------------------------------------------------------------- */
-
-.toaster {
-  position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
-  z-index: 50;
-  max-width: 420px;
-}
-
-.toast {
-  cursor: pointer;
-  white-space: pre-wrap;
-}
-
-.toast-close {
-  opacity: 0.4;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.gate {
-  height: 100vh;
 }

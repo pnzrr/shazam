@@ -1,7 +1,11 @@
-import { ChevronDownIcon, ChevronUpIcon, Cross2Icon } from '@radix-ui/react-icons'
-import { Badge, Flex, IconButton, Text, Tooltip } from '@radix-ui/themes'
+import { ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import type { AgentSession } from '../../shared/types.js'
+import { CHIP_SOLID, type ChipColor } from './chips.js'
 import { TerminalPane } from './TerminalPane.js'
 
 const MIN_HEIGHT = 140
@@ -11,12 +15,12 @@ const MIN_LISTS_VISIBLE = 160
 /** A new session opens the dock across the bottom half of the window. */
 const halfWindow = () => Math.round(window.innerHeight / 2)
 
-const STATUS_COLOR = {
+const STATUS_COLOR: Record<AgentSession['status'], Exclude<ChipColor, 'orange'>> = {
   preparing: 'amber',
   running: 'green',
   exited: 'gray',
   failed: 'red',
-} as const
+}
 
 export interface TerminalDockProps {
   sessions: AgentSession[]
@@ -92,9 +96,12 @@ export function TerminalDock({
   const active = sessions.find((s) => s.id === activeId) ?? sessions[0]
 
   return (
-    <Flex direction="column" className="dock" style={{ height: collapsed ? undefined : height }}>
+    <div
+      className="flex min-h-0 shrink-0 flex-col border-t bg-card"
+      style={{ height: collapsed ? undefined : height }}
+    >
       <div
-        className="dock-resizer"
+        className="-mt-[3px] h-[5px] shrink-0 cursor-ns-resize"
         onPointerDown={() => {
           if (collapsed) return
           dragging.current = true
@@ -102,56 +109,61 @@ export function TerminalDock({
         }}
       />
 
-      <Flex align="center" gap="1" px="2" py="1" className="dock-tabs">
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b px-2 py-1">
         {sessions.map((session) => (
-          <Flex
+          <div
             key={session.id}
-            align="center"
-            gap="1"
-            className={`dock-tab${session.id === active?.id ? ' is-active' : ''}`}
+            className={cn(
+              'flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5',
+              session.id === active?.id ? 'bg-accent' : 'hover:bg-secondary',
+            )}
             onClick={() => onSelect(session.id)}
           >
-            <Badge color={STATUS_COLOR[session.status]} variant="solid" radius="full" size="1">
-              {session.agent}
-            </Badge>
-            <Text size="1">{session.title}</Text>
-            <Tooltip content="End session">
-              <IconButton
-                size="1"
-                variant="ghost"
-                color="gray"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onClose(session.id)
-                }}
-              >
-                <Cross2Icon />
-              </IconButton>
+            <Badge className={CHIP_SOLID[STATUS_COLOR[session.status]]}>{session.agent}</Badge>
+            <span className="text-xs">{session.title}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onClose(session.id)
+                  }}
+                >
+                  <X />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>End session</TooltipContent>
             </Tooltip>
-          </Flex>
+          </div>
         ))}
 
-        <Flex flexGrow="1" />
+        <div className="flex-1" />
 
         {active?.note ? (
-          <Text size="1" color="gray" className="dock-note">
-            {active.note}
-          </Text>
+          <span className="max-w-80 truncate text-xs text-muted-foreground">{active.note}</span>
         ) : null}
         {active?.worktreePath ? (
-          <Tooltip content={active.worktreePath}>
-            <Text size="1" color="gray" className="dock-note">
-              {active.branch}
-            </Text>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="max-w-80 truncate text-xs text-muted-foreground">
+                {active.branch}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{active.worktreePath}</TooltipContent>
           </Tooltip>
         ) : null}
 
-        <Tooltip content={collapsed ? 'Expand terminal' : 'Collapse terminal'}>
-          <IconButton size="1" variant="ghost" color="gray" onClick={() => setCollapsed((c) => !c)}>
-            {collapsed ? <ChevronUpIcon /> : <ChevronDownIcon />}
-          </IconButton>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-xs" onClick={() => setCollapsed((c) => !c)}>
+              {collapsed ? <ChevronUp /> : <ChevronDown />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{collapsed ? 'Expand terminal' : 'Collapse terminal'}</TooltipContent>
         </Tooltip>
-      </Flex>
+      </div>
 
       {!collapsed && active ? (
         <TerminalPane
@@ -165,6 +177,6 @@ export function TerminalDock({
           onStatus={onStatus}
         />
       ) : null}
-    </Flex>
+    </div>
   )
 }
