@@ -31,6 +31,7 @@ export interface PrCardProps {
 export function PrCard({ pr, ctx, action }: PrCardProps) {
   const onLaunched = (session: AgentSession) => ctx.onSessionLaunched(session)
   const link = useCardLink({
+    id: pr.id,
     url: pr.url,
     isLastClicked: ctx.lastClickedId === pr.id,
     onClicked: () => ctx.onTileClicked(pr.id),

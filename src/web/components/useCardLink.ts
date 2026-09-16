@@ -2,6 +2,8 @@ import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface CardLinkOptions {
+  /** The item's id, stamped on the DOM so the keyboard cursor can scroll to it. */
+  id: string
   url: string
   /** Marks this tile as the one touched most recently. */
   isLastClicked: boolean
@@ -16,13 +18,14 @@ export interface CardLinkOptions {
  * clicks that land on the card's empty space, where there is no element to
  * activate. A click that was really a text selection is ignored.
  */
-export function useCardLink({ url, isLastClicked, onClicked }: CardLinkOptions) {
+export function useCardLink({ id, url, isLastClicked, onClicked }: CardLinkOptions) {
   const shouldIgnore = (target: EventTarget | null): boolean => {
     if (!(target instanceof Element)) return false
     return Boolean(target.closest('a, button, input, textarea, select, [role="menuitem"], [data-radix-popper-content-wrapper]'))
   }
 
   return {
+    'data-item-id': id,
     'aria-current': isLastClicked || undefined,
     // An inset ring hugs the card's real bounds whatever width we draw; the
     // `group` lets the title underline on any hover over the card. The tile

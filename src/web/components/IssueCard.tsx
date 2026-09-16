@@ -31,6 +31,7 @@ function labelColors(hex: string): { background: string; color: string } {
 
 export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext }) {
   const link = useCardLink({
+    id: issue.id,
     url: issue.url,
     isLastClicked: ctx.lastClickedId === issue.id,
     onClicked: () => ctx.onTileClicked(issue.id),

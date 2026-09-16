@@ -20,6 +20,7 @@ import { ViewTabs } from './components/ViewTabs.js'
 import { COLUMNS } from './components/columns/index.js'
 import type { ColumnContext } from './components/registry.js'
 import { ownerOf } from './components/registry.js'
+import { useBoardKeys } from './hooks/useBoardKeys.js'
 import { useDashboard } from './hooks/useDashboard.js'
 import { useHealth } from './hooks/useHealth.js'
 import { activeViewQuery, useSavedViews } from './hooks/useSavedViews.js'
@@ -216,12 +217,40 @@ export function App() {
     persistOwners(new Set(view?.owners ?? []))
   }
 
-  const filter = (items: DashboardItem[]) => {
-    const visible = items.filter((item) => !dismissed.has(item.id))
-    const byOwner =
-      owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
-    return byOwner.filter((item) => matchesFilter(item, parsedQuery))
-  }
+  // Memoized (unlike the old per-render filter closure) because the keyboard
+  // cursor below needs the same visible lists the columns render - computing
+  // them once keeps the two views of "what is on screen" identical.
+  const visibleByColumn = useMemo(() => {
+    const map = new Map<ColumnId, DashboardItem[]>()
+    if (!data) return map
+    for (const column of COLUMNS) {
+      const visible = column.select(data).filter((item) => !dismissed.has(item.id))
+      const byOwner =
+        owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
+      map.set(
+        column.id,
+        byOwner.filter((item) => matchesFilter(item, parsedQuery)),
+      )
+    }
+    return map
+  }, [data, dismissed, owners, parsedQuery])
+
+  // j/k walk the cards in reading order: column by column, top to bottom.
+  // Collapsed columns render no cards, so the cursor skips them.
+  const cursorItems = useMemo(
+    () =>
+      COLUMNS.flatMap((column) =>
+        collapsedColumns.has(column.id)
+          ? []
+          : (visibleByColumn.get(column.id) ?? []).map((item) => ({
+              id: item.id,
+              url: item.url,
+            })),
+      ),
+    [visibleByColumn, collapsedColumns],
+  )
+
+  useBoardKeys(cursorItems, lastClickedId, setLastClickedId)
 
   if (dashboard.unauthorized) {
     return (
@@ -356,7 +385,7 @@ export function App() {
           <div className="flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3">
             {COLUMNS.map((column) => {
               const all = data ? column.select(data) : []
-              const items = filter(all)
+              const items = visibleByColumn.get(column.id) ?? []
               return (
                 <DashboardColumn
                   key={column.id}
