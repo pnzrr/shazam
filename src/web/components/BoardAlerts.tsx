@@ -46,6 +46,32 @@ function diffBoard(prev: DashboardData, next: DashboardData): AlertLine[] {
     })
   }
 
+  // State transitions, on your own PRs only: other columns churn with other
+  // people's work, but checks flipping, a verdict landing, or a conflict
+  // appearing on something you authored is always worth a ping.
+  const before = new Map(prev.columns.myPullRequests.map((pr) => [pr.id, pr]))
+  for (const pr of next.columns.myPullRequests) {
+    const old = before.get(pr.id)
+    if (!old) continue
+    const ref = `${pr.repo.nameWithOwner}#${pr.number}`
+    if (old.checks !== 'failure' && pr.checks === 'failure') {
+      lines.push({ tone: 'error', message: `Checks failed on ${ref}`, itemId: pr.id })
+    } else if (old.checks === 'failure' && pr.checks === 'success') {
+      // Recovery only: pending→success fires after every push you make, and
+      // being told your own routine push went green is noise.
+      lines.push({ tone: 'success', message: `Checks green again on ${ref}`, itemId: pr.id })
+    }
+    if (old.reviewDecision !== 'approved' && pr.reviewDecision === 'approved') {
+      lines.push({ tone: 'success', message: `${ref} approved`, itemId: pr.id })
+    }
+    if (old.reviewDecision !== 'changes_requested' && pr.reviewDecision === 'changes_requested') {
+      lines.push({ tone: 'error', message: `Changes requested on ${ref}`, itemId: pr.id })
+    }
+    if (old.mergeable !== 'conflicting' && pr.mergeable === 'conflicting') {
+      lines.push({ tone: 'error', message: `Merge conflicts on ${ref}`, itemId: pr.id })
+    }
+  }
+
   return lines
 }
 
