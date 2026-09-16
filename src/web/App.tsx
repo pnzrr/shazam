@@ -1,4 +1,4 @@
-import { Moon, RefreshCw, Sun, TriangleAlert } from 'lucide-react'
+import { Moon, RefreshCw, Rows3, Rows4, Sun, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import { useHealth } from './hooks/useHealth.js'
 import { activeViewQuery, useSavedViews } from './hooks/useSavedViews.js'
 import { useSessions } from './hooks/useSessions.js'
 import { useAppearance } from './lib/appearance.js'
+import { useDensity } from './lib/density.js'
 import { matchesFilter, parseFilter } from './lib/filter.js'
 import { relativeTime } from './lib/format.js'
 
@@ -85,6 +86,7 @@ function initialQuery(): string {
 
 export function App() {
   const [appearance, toggleAppearance] = useAppearance()
+  const [density, toggleDensity] = useDensity()
   const health = useHealth()
   const dashboard = useDashboard(health?.pollIntervalMs ?? 60_000)
   const sessions = useSessions()
@@ -322,6 +324,24 @@ export function App() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground"
+                  onClick={toggleDensity}
+                >
+                  {/* Like the theme toggle, the icon shows where the click
+                      takes you, not where you are. */}
+                  {density === 'compact' ? <Rows3 /> : <Rows4 />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {density === 'compact' ? 'Switch to comfortable' : 'Switch to compact'}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
                   onClick={toggleAppearance}
                 >
                   {appearance === 'dark' ? <Sun /> : <Moon />}
@@ -381,8 +401,14 @@ export function App() {
 
           {/* The row takes the space the dock leaves. Columns hold a fixed
               width, the row scrolls sideways when they overflow the window,
-              and each column still scrolls vertically on its own. */}
-          <div className="flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3">
+              and each column still scrolls vertically on its own.
+              data-density + group/density is how the cards learn the density:
+              one attribute here, group variants down in the leaves, and no
+              prop has to thread through the column registry. */}
+          <div
+            className="group/density flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3"
+            data-density={density}
+          >
             {COLUMNS.map((column) => {
               const all = data ? column.select(data) : []
               const items = visibleByColumn.get(column.id) ?? []

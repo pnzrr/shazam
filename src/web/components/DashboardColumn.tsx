@@ -105,7 +105,7 @@ export function DashboardColumn({
       <ScrollArea className="min-h-0 flex-1">
         {/* The gutter keeps the overlay scrollbar (10px + its inset) off the
             cards instead of running over their right edge. */}
-        <div className="flex flex-col gap-2 pr-4">
+        <div className="flex flex-col gap-2 pr-4 group-data-[density=compact]/density:gap-1">
           {items.length === 0 ? (
             <span className="px-2 py-4 text-base text-muted-foreground">{column.empty}</span>
           ) : (

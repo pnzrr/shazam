@@ -38,7 +38,13 @@ export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext
   })
 
   return (
-    <Card {...link} className={cn('gap-2 rounded-lg p-3', link.className)}>
+    <Card
+      {...link}
+      className={cn(
+        'gap-2 rounded-lg p-3 group-data-[density=compact]/density:gap-1 group-data-[density=compact]/density:p-2',
+        link.className,
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
@@ -49,7 +55,7 @@ export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext
             href={issue.url}
             target="_blank"
             rel="noreferrer"
-            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
           >
             {issue.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
           </a>
