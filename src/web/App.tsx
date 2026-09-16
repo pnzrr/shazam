@@ -16,11 +16,13 @@ import { FilterChips } from './components/FilterChips.js'
 import { TerminalDock } from './components/TerminalDock.js'
 import { Toaster } from './components/Toaster.js'
 import { TokenGate } from './components/TokenGate.js'
+import { ViewTabs } from './components/ViewTabs.js'
 import { COLUMNS } from './components/columns/index.js'
 import type { ColumnContext } from './components/registry.js'
 import { ownerOf } from './components/registry.js'
 import { useDashboard } from './hooks/useDashboard.js'
 import { useHealth } from './hooks/useHealth.js'
+import { activeViewQuery, useSavedViews } from './hooks/useSavedViews.js'
 import { useSessions } from './hooks/useSessions.js'
 import { useAppearance } from './lib/appearance.js'
 import { matchesFilter, parseFilter } from './lib/filter.js'
@@ -57,10 +59,12 @@ function loadFilter(): Set<string> {
 
 /**
  * The filter text lives in `?q=` rather than localStorage so a filtered view
- * is a shareable URL and a reload lands where you left off.
+ * is a shareable URL and a reload lands where you left off. A URL without one
+ * resumes the active saved view instead; a URL with one that differs from the
+ * view simply shows the view as modified.
  */
 function initialQuery(): string {
-  return new URLSearchParams(window.location.search).get('q') ?? ''
+  return new URLSearchParams(window.location.search).get('q') ?? activeViewQuery()
 }
 
 export function App() {
@@ -70,6 +74,7 @@ export function App() {
   const sessions = useSessions()
   const [owners, setOwners] = useState<Set<string>>(loadFilter)
   const [query, setQuery] = useState<string>(initialQuery)
+  const savedViews = useSavedViews()
   // Which tile you last touched, so you can find your place after coming back
   // from GitHub or an agent session. Deliberately not persisted: it is a marker
   // for the current sitting, not a saved selection.
@@ -163,6 +168,22 @@ export function App() {
     ],
   )
 
+  // The dot on the active tab: the live filter state has drifted from what
+  // the view saved. The All view is fixed, so it never shows one.
+  const activeView = savedViews.activeView
+  const viewModified =
+    activeView !== null &&
+    (activeView.q !== query ||
+      activeView.owners.length !== owners.size ||
+      !activeView.owners.every((owner) => owners.has(owner)))
+
+  const selectView = (id: string) => {
+    savedViews.activate(id)
+    const view = savedViews.views.find((v) => v.id === id) ?? null
+    setQuery(view?.q ?? '')
+    persistOwners(new Set(view?.owners ?? []))
+  }
+
   const filter = (items: DashboardItem[]) => {
     const visible = items.filter((item) => !dismissed.has(item.id))
     const byOwner =
@@ -251,7 +272,19 @@ export function App() {
             </Tooltip>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
+          <div className="flex shrink-0 items-center gap-3 border-b px-4 py-2">
+            <ViewTabs
+              views={savedViews.views}
+              activeId={savedViews.activeId}
+              modified={viewModified}
+              onSelect={selectView}
+              onSave={(name) => savedViews.save(name, query, [...owners])}
+              onUpdate={() => {
+                if (activeView) savedViews.update(activeView.id, query, [...owners])
+              }}
+              onRename={savedViews.rename}
+              onDelete={savedViews.remove}
+            />
             <FilterBar value={query} onChange={setQuery} />
           </div>
 
