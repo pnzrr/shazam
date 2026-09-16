@@ -45,6 +45,22 @@ export interface RawPr {
   reviewRequests: { totalCount: number }
   reviewThreads: { nodes: ({ isResolved: boolean } | null)[] }
   commits: { nodes: ({ commit: { statusCheckRollup: { state: string } | null } } | null)[] }
+  /** Fetched only by the approvedPrs search; the other aliases skip it. */
+  latestOpinionatedReviews?: {
+    nodes: ({ state: string; author: { login: string } | null } | null)[]
+  }
+}
+
+/**
+ * Whether the viewer's standing verdict on the PR is an approval. GitHub keeps
+ * one opinionated review per author - a later comment-only review does not
+ * displace it - so this is exactly the green "approved" the PR page shows next
+ * to the viewer's name, and a dismissed approval no longer counts.
+ */
+export function viewerApproved(raw: RawPr, viewer: string): boolean {
+  return (raw.latestOpinionatedReviews?.nodes ?? []).some(
+    (review) => review?.state === 'APPROVED' && review.author?.login === viewer,
+  )
 }
 
 export interface RawIssue {

@@ -3,13 +3,20 @@ import { type DashboardData, type PullRequestItem, mergeStateBlocks } from '../.
 import { branchMergeMethods } from './branchRules.js'
 import { getGraphqlClient, resetClient } from './client.js'
 import { applyMergeStates } from './mergeState.js'
-import { normalizeIssue, normalizePr, type RawIssue, type RawPr } from './normalize.js'
+import {
+  normalizeIssue,
+  normalizePr,
+  type RawIssue,
+  type RawPr,
+  viewerApproved,
+} from './normalize.js'
 import { DASHBOARD_QUERY, SEARCH_QUERIES } from './queries.js'
 
 interface RawResponse {
   viewer: { login: string }
   myPullRequests: { nodes: (RawPr | null)[] }
   reviewRequests: { nodes: (RawPr | null)[] }
+  approvedPrs: { nodes: (RawPr | null)[] }
   myIssues: { nodes: (RawIssue | null)[] }
   myIssuesAssigned: { nodes: (RawIssue | null)[] }
   rateLimit: { limit: number; remaining: number; resetAt: string } | null
@@ -67,6 +74,7 @@ export async function fetchDashboard(limit: number): Promise<DashboardData> {
     data = await client<RawResponse>(DASHBOARD_QUERY, {
       myPullRequests: SEARCH_QUERIES.myPullRequests,
       reviewRequests: SEARCH_QUERIES.reviewRequests,
+      approvedPrs: SEARCH_QUERIES.approvedPrs,
       myIssues: SEARCH_QUERIES.myIssues,
       myIssuesAssigned: SEARCH_QUERIES.myIssuesAssigned,
       limit,
@@ -81,6 +89,8 @@ export async function fetchDashboard(limit: number): Promise<DashboardData> {
     }
   }
 
+  const viewer = data.viewer?.login ?? ''
+
   const columns = {
     myPullRequests: present(data.myPullRequests?.nodes ?? [])
       .filter(isOpen)
@@ -88,6 +98,13 @@ export async function fetchDashboard(limit: number): Promise<DashboardData> {
       .sort(byUpdatedDesc),
     reviewRequests: present(data.reviewRequests?.nodes ?? [])
       .filter(isOpen)
+      .map(normalizePr)
+      .sort(byUpdatedDesc),
+    // The search only knows the viewer reviewed these; approval is decided
+    // here, off the viewer's own latest opinionated review on each row.
+    approvedPrs: present(data.approvedPrs?.nodes ?? [])
+      .filter(isOpen)
+      .filter((raw) => viewerApproved(raw, viewer))
       .map(normalizePr)
       .sort(byUpdatedDesc),
     myIssues: present(data.myIssues?.nodes ?? [])
@@ -101,12 +118,14 @@ export async function fetchDashboard(limit: number): Promise<DashboardData> {
   }
 
   // Order matters: branch rules only narrow the methods of PRs that can still
-  // merge, and that set is not known until the merge states are in.
-  await applyMergeStates(columns.myPullRequests)
-  await applyBranchRules(columns.myPullRequests)
+  // merge, and that set is not known until the merge states are in. Both
+  // columns with a Merge button get the treatment.
+  const mergeablePrs = [...columns.myPullRequests, ...columns.approvedPrs]
+  await applyMergeStates(mergeablePrs)
+  await applyBranchRules(mergeablePrs)
 
   return {
-    viewer: data.viewer?.login ?? '',
+    viewer,
     fetchedAt: new Date().toISOString(),
     error: null,
     rateLimit: data.rateLimit,
@@ -119,7 +138,13 @@ const EMPTY: DashboardData = {
   fetchedAt: new Date(0).toISOString(),
   error: null,
   rateLimit: null,
-  columns: { myPullRequests: [], reviewRequests: [], myIssues: [], assignedIssues: [] },
+  columns: {
+    myPullRequests: [],
+    reviewRequests: [],
+    approvedPrs: [],
+    myIssues: [],
+    assignedIssues: [],
+  },
 }
 
 /**
