@@ -86,7 +86,9 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
         <DiffStat additions={pr.additions} deletions={pr.deletions} prUrl={pr.url} />
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      {/* mt-1.5 on top of the card's gap: the buttons read as their own row,
+          not part of the chip cluster. */}
+      <div className="mt-1.5 flex items-center justify-end gap-2">
         {action === 'merge' ? <ReviewersButton pr={pr} onChanged={ctx.onChanged} /> : null}
         <ShazamButton
           pr={pr}

@@ -17,7 +17,9 @@ export function DashboardColumn({ column, items, hiddenCount, ctx }: DashboardCo
     // Fixed width rather than an equal share of the window: card content is
     // designed around this measure, and the row scrolls when it runs out.
     <div className="flex min-h-0 w-95 shrink-0 flex-col gap-2">
-      <div className="flex items-center justify-between gap-2 px-1">
+      {/* pr-4 matches the card gutter below, so the count badge lines up with
+          the cards' right edge instead of overhanging it. */}
+      <div className="flex items-center justify-between gap-2 pl-1 pr-4">
         <Tooltip>
           <TooltipTrigger asChild>
             <h3 className="text-lg font-semibold">{column.title}</h3>

@@ -77,7 +77,7 @@ export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext
         ))}
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="mt-1.5 flex items-center justify-end gap-2">
         <CloseIssueButton issue={issue} onDone={() => ctx.onActioned(issue.id)} />
       </div>
     </Card>
