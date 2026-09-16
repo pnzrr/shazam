@@ -1,152 +1,115 @@
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
-.app {
-  height: 100vh;
-  overflow: hidden;
-}
-
-.header {
-  border-bottom: 1px solid var(--gray-a5);
-  flex-shrink: 0;
-}
-
-/* The grid takes the space the dock leaves, and each column scrolls on its own. */
-.grid {
-  flex: 1 1 auto;
-  min-height: 0;
-  align-items: stretch;
-}
-
-.column {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-}
-
-.column-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.column-empty {
-  padding: var(--space-4) var(--space-2);
-}
+@custom-variant dark (&:is(.dark *));
 
 /*
- * List type runs larger than the chrome around it. Radix derives every font
- * size from --scaling, so multiplying the tokens here keeps the theme's own
- * scaling preference intact and lifts line heights in step, which plain
- * font-size overrides would not.
- *
- * The comments overlay is portalled out of the grid but is read at the same
- * distance as the rows it belongs to, so it takes the same scale.
+ * The palette tracks the Phase Two dashboard theme: blue primary, cool
+ * gray-blue neutrals, and the same success/warning greens and ambers, so the
+ * two tools read as one family without being pixel-identical.
  */
-.grid,
-.comments-popover {
-  --list-font-scale: 1.25;
-  --font-size-1: calc(12px * var(--scaling) * var(--list-font-scale));
-  --font-size-2: calc(14px * var(--scaling) * var(--list-font-scale));
-  --font-size-3: calc(16px * var(--scaling) * var(--list-font-scale));
-  --font-size-4: calc(18px * var(--scaling) * var(--list-font-scale));
-  --font-size-5: calc(20px * var(--scaling) * var(--list-font-scale));
-  --font-size-6: calc(24px * var(--scaling) * var(--list-font-scale));
-  --line-height-1: calc(16px * var(--scaling) * var(--list-font-scale));
-  --line-height-2: calc(20px * var(--scaling) * var(--list-font-scale));
-  --line-height-3: calc(24px * var(--scaling) * var(--list-font-scale));
-  --line-height-4: calc(26px * var(--scaling) * var(--list-font-scale));
-  --line-height-5: calc(28px * var(--scaling) * var(--list-font-scale));
-  --line-height-6: calc(30px * var(--scaling) * var(--list-font-scale));
+:root {
+  --background: oklch(0.968 0.007 247.896);
+  --foreground: oklch(0.3211 0 0);
+  --card: oklch(0.984 0.003 247.858);
+  --card-foreground: oklch(0.3211 0 0);
+  --popover: oklch(1 0 none);
+  --popover-foreground: oklch(0.3211 0 0);
+  --primary: oklch(0.6231 0.188 259.8145);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.937 0.0029 264.5419);
+  --secondary-foreground: oklch(0.4461 0.0263 256.8018);
+  --muted: oklch(0.9846 0.0017 247.8389);
+  --muted-foreground: oklch(0.551 0.0234 264.3637);
+  --accent: oklch(0.9514 0.025 236.8242);
+  --accent-foreground: oklch(0.3791 0.1378 265.5222);
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9276 0.0058 264.5313);
+  --input: oklch(0.9276 0.0058 264.5313);
+  --ring: oklch(0.6231 0.188 259.8145);
+  --success: oklch(59.6% 0.145 163.225);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(68.1% 0.162 75.834);
+  --warning-foreground: oklch(1 0 0);
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 0.375rem;
 }
 
-/*
- * Radix draws a Card's edge on a ::after pseudo-element, not as a border, so
- * restyling that edge means overriding that element's shadow. Pinning inset to
- * 0 makes the ring hug the card's real bounds whatever width we draw.
- */
-.row-card::after {
-  transition: box-shadow 120ms ease;
+.dark {
+  --background: oklch(0.2478 0 0);
+  --foreground: oklch(0.9219 0 0);
+  --card: oklch(0.216 0.006 56.043);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.2686 0 0);
+  --popover-foreground: oklch(0.9219 0 0);
+  --primary: oklch(0.68 0.13 242.13);
+  --primary-foreground: oklch(1 0 none);
+  --secondary: oklch(0.2686 0 0);
+  --secondary-foreground: oklch(0.9219 0 0);
+  --muted: oklch(0.2686 0 0);
+  --muted-foreground: oklch(0.7155 0 0);
+  --accent: oklch(0.41 0.0853 243.12);
+  --accent-foreground: oklch(0.8823 0.0571 254.1284);
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.3715 0 0);
+  --input: oklch(0.3715 0 0);
+  --ring: oklch(0.6231 0.188 259.8145);
+  --success: oklch(0.83 0.1729 163.43);
+  --success-foreground: oklch(0.27 0.0501 166.74);
+  --warning: oklch(0.61 0.1252 98.9);
+  --warning-foreground: oklch(0.9622 0.0035 219.5331);
 }
 
-/* The whole tile is a link to the PR or issue; its controls opt out in JS. */
-.row-card.is-clickable {
-  cursor: pointer;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-.row-card.is-clickable:hover::after {
-  inset: 0;
-  box-shadow: inset 0 0 0 1px var(--accent-a8);
-}
-
-/* The tile touched most recently, however it was touched. */
-.row-card.is-last-clicked::after,
-.row-card.is-last-clicked:hover::after {
-  inset: 0;
-  box-shadow: inset 0 0 0 2px var(--accent-9);
-}
-
-.row-card.is-clickable:focus-visible,
-.row-title:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: 2px;
-}
-
-.row-card.is-clickable:hover .row-title {
-  text-decoration: underline;
-}
-
-.row-title {
-  color: var(--accent-11);
-}
-
-/* Chips that deep-link into GitHub keep the badge's own look. */
-.chip-link {
-  color: inherit;
-  text-decoration: none;
-  display: inline-flex;
-}
-
-/* The comment chip opens an overlay, so it is a button that looks like a chip. */
-.chip-button {
-  all: unset;
-  display: inline-flex;
-  cursor: pointer;
-}
-
-.chip-button:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: 2px;
-  border-radius: var(--radius-6);
-}
-
-/* --- comments overlay --------------------------------------------------- */
-
-/* Half the window: comments carry code blocks and tables, and a narrow
- * column turns those into a horizontal scroll per paragraph. */
-.comments-popover {
-  width: 50vw;
-  min-width: 320px;
-  max-width: 92vw;
-}
-
-/*
- * The list scrolls, not the popover: the header and its link out stay put
- * while you read. Capped against the viewport so an overlay opened near the
- * bottom of the screen is still a readable height.
- */
-.comments-scroll {
-  max-height: 50vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: var(--space-2);
-}
-
-.comment-body {
-  min-width: 0;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
 }
 
 /* --- rendered comment bodies -------------------------------------------- */
@@ -157,8 +120,8 @@ body,
  * rather than widening the overlay, and images that cannot overflow it.
  */
 .comment-html {
-  font-size: var(--font-size-1);
-  line-height: var(--line-height-1);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   overflow-wrap: anywhere;
 }
 
@@ -177,7 +140,7 @@ body,
 .comment-html pre,
 .comment-html table,
 .comment-html details {
-  margin: var(--space-2) 0;
+  margin: 0.5rem 0;
 }
 
 /* A comment's own headings sit inside a list item, so they stay close to body
@@ -188,30 +151,30 @@ body,
 .comment-html h4,
 .comment-html h5,
 .comment-html h6 {
-  font-size: var(--font-size-2);
-  line-height: var(--line-height-2);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
   font-weight: 600;
-  margin: var(--space-3) 0 var(--space-1);
+  margin: 0.75rem 0 0.25rem;
 }
 
 .comment-html a {
-  color: var(--accent-11);
+  color: var(--primary);
 }
 
 .comment-html code {
-  background: var(--gray-a3);
-  border-radius: var(--radius-1);
-  padding: 0 var(--space-1);
-  font-family: var(--code-font-family);
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0 0.25rem;
+  font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
 /* Long log lines and diffs scroll inside their own block; without this they
  * set the width of the whole overlay. */
 .comment-html pre {
-  background: var(--gray-a3);
-  border-radius: var(--radius-2);
-  padding: var(--space-2);
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  border-radius: var(--radius);
+  padding: 0.5rem;
   overflow-x: auto;
 }
 
@@ -222,14 +185,22 @@ body,
 }
 
 .comment-html blockquote {
-  border-left: 3px solid var(--gray-a6);
-  padding-left: var(--space-2);
-  color: var(--gray-11);
+  border-left: 3px solid var(--border);
+  padding-left: 0.5rem;
+  color: var(--muted-foreground);
 }
 
 .comment-html ul,
 .comment-html ol {
-  padding-left: var(--space-4);
+  padding-left: 1rem;
+}
+
+.comment-html ul {
+  list-style: disc;
+}
+
+.comment-html ol {
+  list-style: decimal;
 }
 
 .comment-html img {
@@ -245,14 +216,14 @@ body,
 
 .comment-html th,
 .comment-html td {
-  border: 1px solid var(--gray-a6);
-  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
   text-align: left;
 }
 
 .comment-html hr {
   border: none;
-  border-top: 1px solid var(--gray-a6);
+  border-top: 1px solid var(--border);
 }
 
 /* GitHub's own task-list markup, which arrives as a disabled checkbox. */
@@ -261,179 +232,18 @@ body,
 }
 
 .comment-html .task-list-item input {
-  margin-right: var(--space-1);
-}
-
-/*
- * The wrench next to the "changes" chip. It is a button among badges, so it
- * takes the chip row's height rather than a button's, and keeps the solid
- * accent fill of the Shazam button it is a shortcut to.
- */
-.wrench-chip {
-  height: var(--line-height-2);
-  width: var(--line-height-2);
-  min-width: 0;
-  flex-shrink: 0;
-}
-
-/* --- reviewers ---------------------------------------------------------- */
-
-.reviewers-popover {
-  width: 340px;
-  max-width: 92vw;
-}
-
-/* Long collaborator lists scroll; the search box above them stays put. */
-.reviewers-scroll {
-  max-height: 240px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* A login and a real name both want the room, so both may be truncated. */
-.reviewer-person {
-  min-width: 0;
-}
-
-.reviewer-row {
-  min-height: 28px;
-}
-
-.reviewer-add {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-2);
-  cursor: pointer;
-  color: var(--gray-12);
-}
-
-.reviewer-add:hover:not(:disabled) {
-  background: var(--accent-a3);
-}
-
-.reviewer-add:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: -2px;
-}
-
-.reviewer-add:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* Long titles must wrap rather than push the timestamp off the card. */
-.row-heading {
-  min-width: 0;
-}
-
-.row-time {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.inline-icon {
-  opacity: 0.5;
-  vertical-align: -1px;
-}
-
-.filter-chip {
-  cursor: pointer;
-  user-select: none;
-}
-
-/* Radix has no split button, so square off the inner edges of two buttons. */
-.split-button .split-main {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.split-button .split-caret {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  padding-inline: var(--space-1);
-  margin-left: 1px;
+  margin-right: 0.25rem;
 }
 
 /* --- terminal dock ------------------------------------------------------ */
 
-.dock {
-  flex-shrink: 0;
-  border-top: 1px solid var(--gray-a6);
-  background: var(--color-panel-solid);
-  min-height: 0;
-}
-
-.dock-resizer {
-  height: 5px;
-  margin-top: -3px;
-  cursor: ns-resize;
-  flex-shrink: 0;
-}
-
-.dock-tabs {
-  border-bottom: 1px solid var(--gray-a4);
-  flex-shrink: 0;
-  overflow-x: auto;
-}
-
-.dock-tab {
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-2);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.dock-tab:hover {
-  background: var(--gray-a3);
-}
-
-.dock-tab.is-active {
-  background: var(--accent-a4);
-}
-
-.dock-note {
-  white-space: nowrap;
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .terminal-host {
   flex: 1 1 auto;
   min-height: 0;
-  padding: var(--space-2);
+  padding: 0.5rem;
   overflow: hidden;
 }
 
 .terminal-host .xterm {
   height: 100%;
-}
-
-/* --- toasts ------------------------------------------------------------- */
-
-.toaster {
-  position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
-  z-index: 50;
-  max-width: 420px;
-}
-
-.toast {
-  cursor: pointer;
-  white-space: pre-wrap;
-}
-
-.toast-close {
-  opacity: 0.4;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.gate {
-  height: 100vh;
 }

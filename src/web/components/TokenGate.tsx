@@ -1,5 +1,7 @@
-import { Button, Card, Flex, Heading, Text, TextField } from '@radix-ui/themes'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { setToken } from '../lib/token.js'
 
 /**
@@ -10,36 +12,34 @@ export function TokenGate() {
   const [value, setValue] = useState('')
 
   return (
-    <Flex align="center" justify="center" className="gate">
-      <Card size="3" style={{ maxWidth: 460 }}>
-        <Flex direction="column" gap="3">
-          <Heading size="4">shazam needs its access token</Heading>
-          <Text size="2" color="gray">
-            Open the dashboard link printed by <code>shazam serve</code>, or paste the contents of{' '}
-            <code>~/.shazam/token</code> below.
-          </Text>
-          <TextField.Root
-            placeholder="token"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && value.trim()) {
-                setToken(value)
-                window.location.reload()
-              }
-            }}
-          />
-          <Button
-            disabled={!value.trim()}
-            onClick={() => {
+    <div className="flex h-screen items-center justify-center">
+      <Card className="max-w-[460px] gap-3 p-6">
+        <h2 className="text-lg font-semibold">shazam needs its access token</h2>
+        <p className="text-sm text-muted-foreground">
+          Open the dashboard link printed by <code>shazam serve</code>, or paste the contents of{' '}
+          <code>~/.shazam/token</code> below.
+        </p>
+        <Input
+          placeholder="token"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && value.trim()) {
               setToken(value)
               window.location.reload()
-            }}
-          >
-            Use this token
-          </Button>
-        </Flex>
+            }
+          }}
+        />
+        <Button
+          disabled={!value.trim()}
+          onClick={() => {
+            setToken(value)
+            window.location.reload()
+          }}
+        >
+          Use this token
+        </Button>
       </Card>
-    </Flex>
+    </div>
   )
 }

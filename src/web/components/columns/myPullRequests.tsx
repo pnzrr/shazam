@@ -4,6 +4,7 @@ import type { ColumnDef } from '../registry.js'
 export const myPullRequests: ColumnDef = {
   id: 'myPullRequests',
   title: 'My pull requests',
+  dot: 'bg-blue-500',
   hint: 'Open PRs you authored, most recently updated first',
   empty: 'Nothing open. Enjoy it.',
   select: (data) => data.columns.myPullRequests,

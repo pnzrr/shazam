@@ -1,10 +1,18 @@
-import { CheckCircledIcon, ExternalLinkIcon, Pencil1Icon } from '@radix-ui/react-icons'
-import { Avatar, Badge, Box, Flex, Link, Popover, Spinner, Text } from '@radix-ui/themes'
 import DOMPurify from 'dompurify'
+import { CircleCheck, ExternalLink, Loader2, Pencil } from 'lucide-react'
 import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import type { CommentItem, CommentThread } from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
+import { CHIP_SOFT } from './chips.js'
 
 interface ThreadState {
   loading: boolean
@@ -75,9 +83,7 @@ function ReviewBadge({ comment }: { comment: CommentItem }) {
     const path = comment.path ?? 'diff'
     return (
       <Badge
-        size="1"
-        radius="full"
-        color={comment.isResolved ? 'gray' : 'orange'}
+        className={CHIP_SOFT[comment.isResolved ? 'gray' : 'orange']}
         title={comment.isResolved ? `${path} (resolved)` : path}
       >
         {path.split('/').pop()}
@@ -87,22 +93,18 @@ function ReviewBadge({ comment }: { comment: CommentItem }) {
   switch (comment.reviewState) {
     case 'approved':
       return (
-        <Badge size="1" radius="full" color="green">
-          <CheckCircledIcon /> approved
+        <Badge className={CHIP_SOFT.green}>
+          <CircleCheck /> approved
         </Badge>
       )
     case 'changes_requested':
       return (
-        <Badge size="1" radius="full" color="red">
-          <Pencil1Icon /> changes
+        <Badge className={CHIP_SOFT.red}>
+          <Pencil /> changes
         </Badge>
       )
     case 'dismissed':
-      return (
-        <Badge size="1" radius="full" color="gray">
-          dismissed
-        </Badge>
-      )
+      return <Badge className={CHIP_SOFT.gray}>dismissed</Badge>
     default:
       return null
   }
@@ -112,49 +114,43 @@ function Comment({ comment }: { comment: CommentItem }) {
   const html = useMemo(() => sanitize(comment.bodyHtml), [comment.bodyHtml])
 
   return (
-    <Flex gap="2" className="comment" align="start">
-      <Avatar
-        size="1"
-        radius="full"
-        src={comment.avatarUrl ?? undefined}
-        fallback={(comment.author ?? '?').slice(0, 1).toUpperCase()}
-      />
-      <Flex direction="column" gap="1" className="comment-body">
-        <Flex gap="2" align="center" wrap="wrap">
-          <Text size="1" weight="medium">
-            {comment.author ?? 'ghost'}
-          </Text>
+    <div className="flex items-start gap-2">
+      <Avatar className="size-5">
+        <AvatarImage src={comment.avatarUrl ?? undefined} />
+        <AvatarFallback className="text-[10px]">
+          {(comment.author ?? '?').slice(0, 1).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">{comment.author ?? 'ghost'}</span>
           {/* The timestamp is the deep link: every comment has its own anchor
               on GitHub, and this is the one place a row's individual comments
-              are listed, so it is where "take me to that one" belongs. */}
-          <Link
+              are listed, so it is where "take me to that one" belongs.
+              Underlined only on hover: in a list of a dozen comments the
+              timestamps are furniture, and permanently marking each one as a
+              link would be the loudest thing in the overlay. */}
+          <a
             href={comment.url}
             target="_blank"
             rel="noreferrer"
-            size="1"
-            color="gray"
-            // Underlined only on hover: in a list of a dozen comments the
-            // timestamps are furniture, and permanently marking each one as a
-            // link would be the loudest thing in the overlay.
-            underline="hover"
+            className="text-sm text-muted-foreground hover:underline"
             title={`${absoluteTime(comment.createdAt)} - open this comment on GitHub`}
           >
             {relativeTime(comment.createdAt)}
-          </Link>
+          </a>
           <ReviewBadge comment={comment} />
-        </Flex>
+        </div>
         {html ? (
           // GitHub rendered this and sanitizes what it renders; `sanitize`
           // does it again here rather than trusting that across the wire.
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized above
           <div className="comment-html" dangerouslySetInnerHTML={{ __html: html }} />
         ) : (
-          <Text size="1" color="gray">
-            (no description)
-          </Text>
+          <span className="text-sm text-muted-foreground">(no description)</span>
         )}
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   )
 }
 
@@ -223,10 +219,11 @@ export function CommentsPopover({ repo, number, url, children }: CommentsPopover
   }, [open])
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Anchor virtualRef={anchor} />
-      <Popover.Trigger
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor virtualRef={anchor} />
+      <PopoverTrigger
         ref={trigger}
+        asChild
         onPointerDown={(event) => {
           point.current = { x: event.clientX, y: event.clientY }
         }}
@@ -237,14 +234,15 @@ export function CommentsPopover({ repo, number, url, children }: CommentsPopover
         }}
       >
         {children}
-      </Popover.Trigger>
-      <Popover.Content
+      </PopoverTrigger>
+      <PopoverContent
         ref={content}
-        size="1"
         side="bottom"
         align="start"
         sideOffset={8}
-        className="comments-popover"
+        // Half the window: comments carry code blocks and tables, and a narrow
+        // column turns those into a horizontal scroll per paragraph.
+        className="w-[50vw] min-w-80 max-w-[92vw] p-3"
         // Leave focus where it was: this opens under the pointer mid-scan, and
         // pulling focus into it would scroll the column out from under you.
         onOpenAutoFocus={(event) => event.preventDefault()}
@@ -256,49 +254,50 @@ export function CommentsPopover({ repo, number, url, children }: CommentsPopover
         // Escape still closes: that path is not routed through here.
         onInteractOutside={(event) => event.preventDefault()}
       >
-        <Flex direction="column" gap="2">
-          <Flex align="center" justify="between" gap="3">
-            <Text size="1" color="gray">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground">
               {thread ? `${thread.comments.length} comment${thread.comments.length === 1 ? '' : 's'}` : 'Comments'}
               {thread?.truncated ? ' (most recent)' : ''}
-            </Text>
-            <Link href={url} target="_blank" rel="noreferrer" size="1">
-              {repo}#{number} <ExternalLinkIcon className="inline-icon" />
-            </Link>
-          </Flex>
+            </span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
+              {repo}#{number} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
+            </a>
+          </div>
 
           {loading ? (
-            <Flex align="center" gap="2" py="2">
-              <Spinner size="1" />
-              <Text size="1" color="gray">
-                Loading…
-              </Text>
-            </Flex>
+            <div className="flex items-center gap-2 py-2">
+              <Loader2 className="size-3 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Loading…</span>
+            </div>
           ) : null}
 
-          {error ? (
-            <Text size="1" color="red">
-              {error}
-            </Text>
-          ) : null}
+          {error ? <span className="text-sm text-destructive">{error}</span> : null}
 
           {thread && thread.comments.length === 0 && !loading ? (
-            <Text size="1" color="gray">
-              Nothing here yet.
-            </Text>
+            <span className="text-sm text-muted-foreground">Nothing here yet.</span>
           ) : null}
 
           {thread && thread.comments.length > 0 ? (
-            <Box className="comments-scroll">
-              <Flex direction="column" gap="3">
+            /* The list scrolls, not the popover: the header and its link out
+               stay put while you read. Capped against the viewport so an
+               overlay opened near the bottom of the screen is still a
+               readable height. */
+            <div className="max-h-[50vh] overflow-y-auto overscroll-contain pr-2">
+              <div className="flex flex-col gap-3">
                 {thread.comments.map((comment) => (
                   <Comment key={comment.id} comment={comment} />
                 ))}
-              </Flex>
-            </Box>
+              </div>
+            </div>
           ) : null}
-        </Flex>
-      </Popover.Content>
-    </Popover.Root>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

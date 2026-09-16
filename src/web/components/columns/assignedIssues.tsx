@@ -3,7 +3,8 @@ import type { ColumnDef } from '../registry.js'
 
 export const assignedIssues: ColumnDef = {
   id: 'assignedIssues',
-  title: 'Assigned to me',
+  title: 'Issues assigned to me',
+  dot: 'bg-purple-500',
   hint: 'Open issues assigned to you that someone else opened',
   empty: 'Nothing assigned to you.',
   select: (data) => data.columns.assignedIssues,
