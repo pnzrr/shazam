@@ -1,4 +1,4 @@
-import { Moon, RefreshCw, Rows3, Rows4, Sun, TriangleAlert } from 'lucide-react'
+import { Bell, BellOff, Moon, RefreshCw, Rows3, Rows4, Sun, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/tooltip'
 import type { AgentSession, ColumnId, DashboardItem } from '../shared/types.js'
 import './app.css'
+import { BoardAlerts } from './components/BoardAlerts.js'
 import { DashboardColumn } from './components/DashboardColumn.js'
 import { FilterBar } from './components/FilterBar.js'
 import { FilterChips } from './components/FilterChips.js'
@@ -33,6 +34,7 @@ import { relativeTime } from './lib/format.js'
 
 const FILTER_KEY = 'shazam.owners'
 const COLLAPSED_KEY = 'shazam.collapsed'
+const ALERTS_KEY = 'shazam.alerts'
 
 /**
  * How long a row stays hidden after you act on it. Long enough for GitHub's
@@ -108,6 +110,37 @@ export function App() {
   // Collapsed columns persist across sessions: which lists you care about is
   // a lasting preference, unlike the per-sitting lastClickedId above.
   const [collapsedColumns, setCollapsedColumns] = useState<Set<ColumnId>>(loadCollapsed)
+  const [alertsOn, setAlertsOn] = useState(() => {
+    try {
+      return localStorage.getItem(ALERTS_KEY) === 'on'
+    } catch {
+      return false
+    }
+  })
+
+  const toggleAlerts = useCallback(() => {
+    setAlertsOn((current) => {
+      const next = !current
+      try {
+        localStorage.setItem(ALERTS_KEY, next ? 'on' : 'off')
+      } catch {
+        // storage disabled
+      }
+      // Ask on enable, not on load: the browser's permission prompt should
+      // only ever appear as the direct answer to clicking the bell.
+      if (next && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        void Notification.requestPermission()
+      }
+      return next
+    })
+  }, [])
+
+  const focusItem = useCallback((id: string) => {
+    setLastClickedId(id)
+    document
+      .querySelector(`[data-item-id="${CSS.escape(id)}"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [])
 
   const toggleCollapsed = useCallback((id: ColumnId) => {
     setCollapsedColumns((current) => {
@@ -291,6 +324,27 @@ export function App() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground"
+                  aria-pressed={alertsOn}
+                  onClick={toggleAlerts}
+                >
+                  {alertsOn ? <Bell /> : <BellOff />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {!alertsOn
+                  ? 'Alerts off'
+                  : typeof Notification !== 'undefined' && Notification.permission === 'denied'
+                    ? 'Alerts on - desktop notifications blocked by the browser, so toasts only'
+                    : 'Alerts on: new cards, and state changes on your PRs'}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
                   disabled={dashboard.refreshing}
                   onClick={() => void dashboard.refresh()}
                 >
@@ -435,6 +489,7 @@ export function App() {
             onStatus={(session) => sessions.update(session)}
           />
           <KeyboardHelp />
+          <BoardAlerts data={data} enabled={alertsOn} onFocusItem={focusItem} />
         </div>
       </Toaster>
     </TooltipProvider>
