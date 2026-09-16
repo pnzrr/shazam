@@ -215,26 +215,6 @@
   color: var(--accent-11);
 }
 
-/* Chips that deep-link into GitHub keep the badge's own look. */
-.chip-link {
-  color: inherit;
-  text-decoration: none;
-  display: inline-flex;
-}
-
-/* The comment chip opens an overlay, so it is a button that looks like a chip. */
-.chip-button {
-  all: unset;
-  display: inline-flex;
-  cursor: pointer;
-}
-
-.chip-button:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: 2px;
-  border-radius: var(--radius-6);
-}
-
 /* --- comments overlay --------------------------------------------------- */
 
 /* Half the window: comments carry code blocks and tables, and a narrow
@@ -450,11 +430,6 @@
 .inline-icon {
   opacity: 0.5;
   vertical-align: -1px;
-}
-
-.filter-chip {
-  cursor: pointer;
-  user-select: none;
 }
 
 /* Radix has no split button, so square off the inner edges of two buttons. */

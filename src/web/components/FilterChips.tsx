@@ -1,4 +1,5 @@
-import { Badge, Flex, Text } from '@radix-ui/themes'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 export interface FilterChipsProps {
   owners: { owner: string; count: number }[]
@@ -6,6 +7,12 @@ export interface FilterChipsProps {
   onToggle: (owner: string) => void
   onClear: () => void
 }
+
+const chipClass = (active: boolean) =>
+  cn(
+    'cursor-pointer select-none',
+    active ? '' : 'bg-secondary text-muted-foreground hover:bg-secondary/80',
+  )
 
 /**
  * Owner filter derived from whatever is currently on screen, so it needs no
@@ -15,31 +22,18 @@ export function FilterChips({ owners, selected, onToggle, onClear }: FilterChips
   if (owners.length < 2) return null
 
   return (
-    <Flex gap="1" align="center" wrap="wrap">
-      <Badge
-        variant={selected.size === 0 ? 'solid' : 'soft'}
-        color={selected.size === 0 ? undefined : 'gray'}
-        radius="full"
-        className="filter-chip"
-        onClick={onClear}
-      >
+    <div className="flex flex-wrap items-center gap-1">
+      <Badge className={chipClass(selected.size === 0)} onClick={onClear}>
         All
       </Badge>
       {owners.map(({ owner, count }) => (
-        <Badge
-          key={owner}
-          variant={selected.has(owner) ? 'solid' : 'soft'}
-          color={selected.has(owner) ? undefined : 'gray'}
-          radius="full"
-          className="filter-chip"
-          onClick={() => onToggle(owner)}
-        >
+        <Badge key={owner} className={chipClass(selected.has(owner))} onClick={() => onToggle(owner)}>
           {owner}
-          <Text size="1" color="gray" ml="1">
+          <span className={selected.has(owner) ? 'opacity-75' : 'text-muted-foreground'}>
             {count}
-          </Text>
+          </span>
         </Badge>
       ))}
-    </Flex>
+    </div>
   )
 }
