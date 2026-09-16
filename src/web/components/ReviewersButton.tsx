@@ -7,7 +7,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  User,
+  UserPlus,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -212,10 +212,10 @@ export function ReviewersButton({ pr, onChanged }: ReviewersButtonProps) {
           <PopoverTrigger asChild>
             <Button
               size="xs"
+              aria-label="Request reviewers"
               className={cn('text-sm', BUTTON_SOFT[pending > 0 ? 'amber' : 'gray'])}
             >
-              <User />
-              Request
+              <UserPlus />
               {pending > 0 ? <span className="font-bold">{pending}</span> : null}
             </Button>
           </PopoverTrigger>
