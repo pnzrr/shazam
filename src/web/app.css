@@ -112,28 +112,6 @@
   }
 }
 
-/* ====================================================================== */
-/* Legacy rules below are written against Radix Themes CSS variables and  */
-/* dissolve into Tailwind utilities as each component is converted.       */
-/* ====================================================================== */
-
-.app {
-  height: 100vh;
-  overflow: hidden;
-}
-
-.header {
-  border-bottom: 1px solid var(--gray-a5);
-  flex-shrink: 0;
-}
-
-/* The grid takes the space the dock leaves, and each column scrolls on its own. */
-.grid {
-  flex: 1 1 auto;
-  min-height: 0;
-  align-items: stretch;
-}
-
 /* --- rendered comment bodies -------------------------------------------- */
 
 /*
