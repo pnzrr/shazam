@@ -1,5 +1,5 @@
 /**
- * One request per poll. Three aliased searches plus rateLimit means the whole
+ * One request per poll. Five aliased searches plus rateLimit means the whole
  * dashboard costs a single round trip no matter how many columns are on screen.
  */
 export const DASHBOARD_QUERY = /* GraphQL */ `
@@ -90,6 +90,7 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
   query Dashboard(
     $myPullRequests: String!
     $reviewRequests: String!
+    $approvedPrs: String!
     $myIssues: String!
     $myIssuesAssigned: String!
     $limit: Int!
@@ -105,6 +106,25 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
     reviewRequests: search(query: $reviewRequests, type: ISSUE, first: $limit) {
       nodes {
         ...PrFields
+      }
+    }
+    approvedPrs: search(query: $approvedPrs, type: ISSUE, first: $limit) {
+      nodes {
+        ...PrFields
+        # Only this search pays for the review nodes: search can say "the
+        # viewer reviewed it" but not "the viewer's review was an approval",
+        # so the poller reads the viewer's standing verdict off each row and
+        # keeps the approved ones.
+        ... on PullRequest {
+          latestOpinionatedReviews(first: 10) {
+            nodes {
+              state
+              author {
+                login
+              }
+            }
+          }
+        }
       }
     }
     myIssues: search(query: $myIssues, type: ISSUE, first: $limit) {
@@ -133,6 +153,15 @@ export const SEARCH_QUERIES = {
    */
   reviewRequests:
     'is:open is:pr review-requested:@me -author:@me -reviewed-by:@me archived:false sort:updated-desc',
+  /**
+   * `-review-requested:@me` keeps a PR whose review was re-requested after
+   * your approval in "Waiting on my review" instead of both columns. Search
+   * cannot narrow `reviewed-by:@me` to approvals (`review:approved` is the
+   * PR's overall decision, not yours), so the poller filters these rows by the
+   * viewer's own latest opinionated review.
+   */
+  approvedPrs:
+    'is:open is:pr reviewed-by:@me -author:@me -review-requested:@me archived:false sort:updated-desc',
   myIssues: 'is:open is:issue author:@me archived:false sort:updated-desc',
   /**
    * `-author:@me` keeps the two issue columns disjoint, the same way

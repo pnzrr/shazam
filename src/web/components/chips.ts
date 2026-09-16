@@ -7,10 +7,14 @@
  * dark backgrounds.
  */
 
-export type ChipColor = 'green' | 'red' | 'amber' | 'orange' | 'gray'
+export type ChipColor = 'green' | 'blue' | 'red' | 'amber' | 'orange' | 'gray'
+
+/** Colors that exist only as soft chips, not as solid fills or buttons. */
+type ChipOnlyColor = 'orange' | 'blue'
 
 export const CHIP_SOFT: Record<ChipColor, string> = {
   green: 'bg-success/15 text-emerald-700 dark:bg-success/15 dark:text-success',
+  blue: 'bg-primary/15 text-blue-700 dark:bg-primary/15 dark:text-primary',
   red: 'bg-destructive/10 text-red-700 dark:bg-destructive/15 dark:text-red-400',
   amber: 'bg-warning/15 text-amber-700 dark:bg-warning/15 dark:text-warning',
   orange: 'bg-orange-500/15 text-orange-700 dark:bg-orange-400/15 dark:text-orange-400',
@@ -18,7 +22,7 @@ export const CHIP_SOFT: Record<ChipColor, string> = {
 }
 
 /** Solid fills, for the dock's session-status badges. */
-export const CHIP_SOLID: Record<Exclude<ChipColor, 'orange'>, string> = {
+export const CHIP_SOLID: Record<Exclude<ChipColor, ChipOnlyColor>, string> = {
   green: 'bg-success text-success-foreground',
   red: 'bg-destructive text-white',
   amber: 'bg-warning text-warning-foreground',
@@ -26,7 +30,7 @@ export const CHIP_SOLID: Record<Exclude<ChipColor, 'orange'>, string> = {
 }
 
 /** Soft action buttons (Radix's variant="soft"), hover a shade deeper. */
-export const BUTTON_SOFT: Record<Exclude<ChipColor, 'orange'>, string> = {
+export const BUTTON_SOFT: Record<Exclude<ChipColor, ChipOnlyColor>, string> = {
   green:
     'bg-success/15 text-emerald-700 hover:bg-success/25 hover:text-emerald-700 dark:bg-success/15 dark:text-success dark:hover:bg-success/25 dark:hover:text-success',
   red: 'bg-destructive/10 text-red-700 hover:bg-destructive/20 hover:text-red-700 dark:bg-destructive/15 dark:text-red-400 dark:hover:bg-destructive/25 dark:hover:text-red-400',

@@ -9,9 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { BUTTON_SOFT, type ChipColor } from './chips.js'
+import { BUTTON_SOFT } from './chips.js'
 
-type ButtonColor = Exclude<ChipColor, 'orange'>
+type ButtonColor = keyof typeof BUTTON_SOFT
 
 export interface SplitActionButtonProps {
   label: string

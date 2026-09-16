@@ -198,6 +198,8 @@ export interface DashboardData {
   columns: {
     myPullRequests: PullRequestItem[]
     reviewRequests: PullRequestItem[]
+    /** Someone else's open PRs that the viewer has approved and not seen merge. */
+    approvedPrs: PullRequestItem[]
     myIssues: IssueItem[]
     assignedIssues: IssueItem[]
   }

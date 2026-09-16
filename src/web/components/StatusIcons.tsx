@@ -8,6 +8,7 @@ import {
   FileText,
   MessageCircle,
   Pencil,
+  UserCheck,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -85,7 +86,9 @@ export function ChecksChip({ state, prUrl }: { state: CheckState; prUrl?: string
 export function ReviewChip({ decision }: { decision: ReviewDecision }) {
   switch (decision) {
     case 'approved':
-      return <Chip tooltip="Approved" color="green" icon={<CircleCheck />} label="approved" />
+      // Deliberately not the green circled check: that is CI's mark, and the
+      // two chips sit side by side on a card.
+      return <Chip tooltip="Approved" color="blue" icon={<UserCheck />} label="approved" />
     case 'changes_requested':
       return <Chip tooltip="Changes requested" color="red" icon={<Pencil />} label="changes" />
     case 'review_required':

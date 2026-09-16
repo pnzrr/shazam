@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { AgentSession } from '../../shared/types.js'
-import { CHIP_SOLID, type ChipColor } from './chips.js'
+import { CHIP_SOLID } from './chips.js'
 import { TerminalPane } from './TerminalPane.js'
 
 const MIN_HEIGHT = 140
@@ -15,7 +15,7 @@ const MIN_LISTS_VISIBLE = 160
 /** A new session opens the dock across the bottom half of the window. */
 const halfWindow = () => Math.round(window.innerHeight / 2)
 
-const STATUS_COLOR: Record<AgentSession['status'], Exclude<ChipColor, 'orange'>> = {
+const STATUS_COLOR: Record<AgentSession['status'], keyof typeof CHIP_SOLID> = {
   preparing: 'amber',
   running: 'green',
   exited: 'gray',
