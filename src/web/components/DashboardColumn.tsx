@@ -1,4 +1,6 @@
-import { Badge, Flex, Heading, ScrollArea, Text, Tooltip } from '@radix-ui/themes'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DashboardItem } from '../../shared/types.js'
 import type { ColumnContext, ColumnDef } from './registry.js'
 
@@ -12,36 +14,36 @@ export interface DashboardColumnProps {
 
 export function DashboardColumn({ column, items, hiddenCount, ctx }: DashboardColumnProps) {
   return (
-    <Flex direction="column" gap="2" className="column">
-      <Flex align="center" justify="between" gap="2" px="1">
-        <Tooltip content={column.hint}>
-          <Heading size="3">{column.title}</Heading>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+      <div className="flex items-center justify-between gap-2 px-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <h3 className="text-lg font-semibold">{column.title}</h3>
+          </TooltipTrigger>
+          <TooltipContent>{column.hint}</TooltipContent>
         </Tooltip>
-        <Flex gap="1" align="center">
+        <div className="flex items-center gap-1">
           {hiddenCount > 0 ? (
-            <Tooltip content={`${hiddenCount} hidden by the owner filter`}>
-              <Text size="1" color="gray">
-                +{hiddenCount}
-              </Text>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-muted-foreground">+{hiddenCount}</span>
+              </TooltipTrigger>
+              <TooltipContent>{`${hiddenCount} hidden by the owner filter`}</TooltipContent>
             </Tooltip>
           ) : null}
-          <Badge variant="soft" radius="full">
-            {items.length}
-          </Badge>
-        </Flex>
-      </Flex>
+          <Badge className="bg-accent text-accent-foreground">{items.length}</Badge>
+        </div>
+      </div>
 
-      <ScrollArea scrollbars="vertical" className="column-scroll">
-        <Flex direction="column" gap="2" pr="2">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-2 pr-2">
           {items.length === 0 ? (
-            <Text size="2" color="gray" className="column-empty">
-              {column.empty}
-            </Text>
+            <span className="px-2 py-4 text-base text-muted-foreground">{column.empty}</span>
           ) : (
             items.map((item) => column.renderItem(item, ctx))
           )}
-        </Flex>
+        </div>
       </ScrollArea>
-    </Flex>
+    </div>
   )
 }

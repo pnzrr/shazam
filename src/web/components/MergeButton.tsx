@@ -1,6 +1,24 @@
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
-import { AlertDialog, Button, Callout, Flex, Select, Text, TextArea } from '@radix-ui/themes'
+import { Loader2, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import {
   type BlockingMergeState,
   type MergeMethod,
@@ -107,9 +125,9 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
         label="Merge"
         suffix={
           warn ? (
-            <Text weight="bold" aria-hidden>
+            <span className="font-bold" aria-hidden>
               {' !'}
-            </Text>
+            </span>
           ) : null
         }
         color={warn ? 'amber' : 'green'}
@@ -132,67 +150,66 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
         ]}
       />
 
-      <AlertDialog.Root open={open} onOpenChange={setOpen}>
-        <AlertDialog.Content maxWidth="480px">
-          <AlertDialog.Title>
-            Merge {pr.repo.nameWithOwner}#{pr.number}
-          </AlertDialog.Title>
-          <AlertDialog.Description size="2">{pr.title}</AlertDialog.Description>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Merge {pr.repo.nameWithOwner}#{pr.number}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{pr.title}</AlertDialogDescription>
+          </AlertDialogHeader>
 
           {warn ? (
-            <Callout.Root color="amber" size="1" variant="surface" mt="3">
-              <Callout.Icon>
-                <ExclamationTriangleIcon />
-              </Callout.Icon>
-              <Callout.Text>
+            <Alert className="border-warning/50 bg-warning/10 text-amber-700 dark:text-warning">
+              <TriangleAlert />
+              <AlertDescription className="text-amber-700 dark:text-warning">
                 {checksRed
                   ? 'CI checks are failing on this pull request. No branch rule requires them, so GitHub will take the merge.'
                   : 'CI checks are still running on this pull request.'}
-              </Callout.Text>
-            </Callout.Root>
+              </AlertDescription>
+            </Alert>
           ) : null}
 
-          <Flex direction="column" gap="2" mt="4">
-            <Text size="2" weight="medium">
-              Method
-            </Text>
-            <Select.Root value={method} onValueChange={(v) => setMethod(v as MergeMethod)}>
-              <Select.Trigger />
-              <Select.Content>
+          <div className="mt-2 flex flex-col gap-2">
+            <span className="text-sm font-medium">Method</span>
+            <Select value={method} onValueChange={(v) => setMethod(v as MergeMethod)}>
+              <SelectTrigger className="w-fit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {METHODS.filter((m) => pr.allowedMergeMethods.includes(m.value)).map((m) => (
-                  <Select.Item key={m.value} value={m.value}>
+                  <SelectItem key={m.value} value={m.value}>
                     {m.label}
-                  </Select.Item>
+                  </SelectItem>
                 ))}
-              </Select.Content>
-            </Select.Root>
-          </Flex>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Flex direction="column" gap="2" mt="3">
-            <Text size="2" weight="medium">
-              Commit message body
-            </Text>
-            <TextArea
+          <div className="mt-1 flex flex-col gap-2">
+            <span className="text-sm font-medium">Commit message body</span>
+            <Textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
               placeholder="Why this is going in"
               rows={3}
               autoFocus
             />
-          </Flex>
+          </div>
 
-          <Flex gap="3" mt="4" justify="end">
-            <AlertDialog.Cancel>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
-            </AlertDialog.Cancel>
-            <Button color="green" loading={busy} onClick={() => void merge(method, body)}>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              className="bg-success text-success-foreground hover:bg-success/90"
+              disabled={busy}
+              onClick={() => void merge(method, body)}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : null}
               Merge
             </Button>
-          </Flex>
-        </AlertDialog.Content>
-      </AlertDialog.Root>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

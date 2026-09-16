@@ -1,13 +1,13 @@
-import {
-  ExclamationTriangleIcon,
-  GitHubLogoIcon,
-  MoonIcon,
-  ReloadIcon,
-  SunIcon,
-} from '@radix-ui/react-icons'
-import { Callout, Flex, Heading, IconButton, Text, Theme, Tooltip } from '@radix-ui/themes'
-import '@radix-ui/themes/styles.css'
+import { Moon, RefreshCw, Sun, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { AgentSession, DashboardItem } from '../shared/types.js'
 import './app.css'
 import { DashboardColumn } from './components/DashboardColumn.js'
@@ -31,6 +31,18 @@ const FILTER_KEY = 'shazam.owners'
  * search index to catch up, short enough that a no-op action self-corrects.
  */
 const DISMISS_MS = 90_000
+
+/**
+ * GitHub's own mark, drawn inline: lucide ships no brand icons, and this is
+ * the one place the dashboard needs one.
+ */
+function GitHubIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden focusable="false">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+    </svg>
+  )
+}
 
 function loadFilter(): Set<string> {
   try {
@@ -133,103 +145,118 @@ export function App() {
 
   if (dashboard.unauthorized) {
     return (
-      <Theme appearance={appearance} accentColor="indigo" grayColor="slate" radius="medium">
+      <TooltipProvider delayDuration={300}>
         <TokenGate />
-      </Theme>
+      </TooltipProvider>
     )
   }
 
   const toolWarnings = (health?.tools ?? []).filter((tool) => tool.status !== 'ok')
 
   return (
-    <Theme appearance={appearance} accentColor="indigo" grayColor="slate" radius="medium">
+    <TooltipProvider delayDuration={300}>
       <Toaster>
-        <Flex direction="column" className="app">
-          <Flex align="center" gap="3" px="4" py="3" className="header">
-            <GitHubLogoIcon width="20" height="20" />
-            <Heading size="4">shazam</Heading>
+        <div className="flex h-screen flex-col overflow-hidden">
+          <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3">
+            <GitHubIcon />
+            <h1 className="text-lg font-semibold">shazam</h1>
             {data?.viewer ? (
-              <Text size="2" color="gray">
-                {data.viewer}
-              </Text>
+              <span className="text-sm text-muted-foreground">{data.viewer}</span>
             ) : null}
 
-            <Flex flexGrow="1" justify="center">
+            <div className="flex flex-1 justify-center">
               <FilterChips
                 owners={ownerCounts}
                 selected={owners}
                 onToggle={toggleOwner}
                 onClear={() => persistOwners(new Set())}
               />
-            </Flex>
+            </div>
 
             {data?.rateLimit ? (
-              <Tooltip
-                content={`GitHub API: ${data.rateLimit.remaining} of ${data.rateLimit.limit} left, resets ${relativeTime(data.rateLimit.resetAt)}`}
-              >
-                <Text size="1" color="gray">
-                  {data.rateLimit.remaining}
-                </Text>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-xs text-muted-foreground">
+                    {data.rateLimit.remaining}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {`GitHub API: ${data.rateLimit.remaining} of ${data.rateLimit.limit} left, resets ${relativeTime(data.rateLimit.resetAt)}`}
+                </TooltipContent>
               </Tooltip>
             ) : null}
 
             {data ? (
-              <Text size="1" color="gray">
+              <span className="text-xs text-muted-foreground">
                 {relativeTime(data.fetchedAt)}
-              </Text>
+              </span>
             ) : null}
 
-            <Tooltip content="Refresh now">
-              <IconButton
-                size="2"
-                variant="ghost"
-                color="gray"
-                loading={dashboard.refreshing}
-                onClick={() => void dashboard.refresh()}
-              >
-                <ReloadIcon />
-              </IconButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
+                  disabled={dashboard.refreshing}
+                  onClick={() => void dashboard.refresh()}
+                >
+                  {dashboard.refreshing ? <RefreshCw className="animate-spin" /> : <RefreshCw />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh now</TooltipContent>
             </Tooltip>
 
-            <Tooltip content={appearance === 'dark' ? 'Switch to light' : 'Switch to dark'}>
-              <IconButton size="2" variant="ghost" color="gray" onClick={toggleAppearance}>
-                {appearance === 'dark' ? <SunIcon /> : <MoonIcon />}
-              </IconButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
+                  onClick={toggleAppearance}
+                >
+                  {appearance === 'dark' ? <Sun /> : <Moon />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {appearance === 'dark' ? 'Switch to light' : 'Switch to dark'}
+              </TooltipContent>
             </Tooltip>
-          </Flex>
+          </div>
 
           {dashboard.error || data?.error || toolWarnings.length > 0 ? (
-            <Flex direction="column" gap="1" px="4" pb="2">
+            <div className="flex flex-col gap-1 px-4 pb-2">
               {dashboard.error ? (
-                <Callout.Root color="red" size="1" variant="surface">
-                  <Callout.Icon>
-                    <ExclamationTriangleIcon />
-                  </Callout.Icon>
-                  <Callout.Text>Cannot reach the shazam server: {dashboard.error}</Callout.Text>
-                </Callout.Root>
+                <Alert variant="destructive" className="border-destructive/50 px-3 py-2">
+                  <TriangleAlert />
+                  <AlertDescription>
+                    Cannot reach the shazam server: {dashboard.error}
+                  </AlertDescription>
+                </Alert>
               ) : null}
               {data?.error ? (
-                <Callout.Root color="red" size="1" variant="surface">
-                  <Callout.Icon>
-                    <ExclamationTriangleIcon />
-                  </Callout.Icon>
-                  <Callout.Text>Last poll failed: {data.error}</Callout.Text>
-                </Callout.Root>
+                <Alert variant="destructive" className="border-destructive/50 px-3 py-2">
+                  <TriangleAlert />
+                  <AlertDescription>Last poll failed: {data.error}</AlertDescription>
+                </Alert>
               ) : null}
               {toolWarnings.map((tool) => (
-                <Callout.Root key={tool.name} color="amber" size="1" variant="surface">
-                  <Callout.Icon>
-                    <ExclamationTriangleIcon />
-                  </Callout.Icon>
-                  <Callout.Text>
+                <Alert
+                  key={tool.name}
+                  className="border-warning/50 px-3 py-2 text-amber-700 dark:text-warning"
+                >
+                  <TriangleAlert />
+                  <AlertDescription className="text-amber-700 dark:text-warning">
                     {tool.name}: {tool.detail ?? tool.status}
-                  </Callout.Text>
-                </Callout.Root>
+                  </AlertDescription>
+                </Alert>
               ))}
-            </Flex>
+            </div>
           ) : null}
 
-          <Flex gap="3" px="4" pb="3" className="grid">
+          {/* The grid takes the space the dock leaves, and each column scrolls
+              on its own. */}
+          <div className="flex min-h-0 flex-1 items-stretch gap-3 px-4 pb-3">
             {COLUMNS.map((column) => {
               const all = data ? column.select(data) : []
               const items = filter(all)
@@ -243,7 +270,7 @@ export function App() {
                 />
               )
             })}
-          </Flex>
+          </div>
 
           <TerminalDock
             sessions={sessions.sessions}
@@ -254,8 +281,8 @@ export function App() {
             fontSize={health?.terminalFontSize ?? 20}
             onStatus={(session) => sessions.update(session)}
           />
-        </Flex>
+        </div>
       </Toaster>
-    </Theme>
+    </TooltipProvider>
   )
 }

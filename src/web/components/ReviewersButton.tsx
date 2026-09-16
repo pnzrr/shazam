@@ -1,28 +1,23 @@
 import {
-  CheckCircledIcon,
-  ChatBubbleIcon,
-  Cross2Icon,
-  DotsHorizontalIcon,
-  MinusCircledIcon,
-  Pencil1Icon,
-  PersonIcon,
-  PlusIcon,
-  UpdateIcon,
-} from '@radix-ui/react-icons'
-import {
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Popover,
-  Spinner,
-  Text,
-  TextField,
-  Tooltip,
-} from '@radix-ui/themes'
+  CircleCheck,
+  CircleMinus,
+  Ellipsis,
+  Loader2,
+  MessageCircle,
+  Pencil,
+  Plus,
+  RefreshCw,
+  User,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import type {
   PullRequestItem,
   Reviewer,
@@ -31,6 +26,7 @@ import type {
   ReviewersPanel,
 } from '../../shared/types.js'
 import { api } from '../lib/api.js'
+import { BUTTON_SOFT, type ChipColor, CHIP_SOFT } from './chips.js'
 import { useToast } from './Toaster.js'
 
 const STATE_LABEL: Record<ReviewerState, string> = {
@@ -41,7 +37,7 @@ const STATE_LABEL: Record<ReviewerState, string> = {
   dismissed: 'dismissed',
 }
 
-const STATE_COLOR: Record<ReviewerState, React.ComponentProps<typeof Badge>['color']> = {
+const STATE_COLOR: Record<ReviewerState, ChipColor> = {
   pending: 'amber',
   approved: 'green',
   changes_requested: 'red',
@@ -55,36 +51,30 @@ const countPending = (panel: ReviewersPanel): number =>
 function StateIcon({ state }: { state: ReviewerState }) {
   switch (state) {
     case 'approved':
-      return <CheckCircledIcon />
+      return <CircleCheck />
     case 'changes_requested':
-      return <Pencil1Icon />
+      return <Pencil />
     case 'commented':
-      return <ChatBubbleIcon />
+      return <MessageCircle />
     case 'dismissed':
-      return <MinusCircledIcon />
+      return <CircleMinus />
     default:
-      return <DotsHorizontalIcon />
+      return <Ellipsis />
   }
 }
 
 function Person({ login, name, avatarUrl }: ReviewerCandidate) {
   return (
-    <Flex gap="2" align="center" className="reviewer-person">
-      <Avatar
-        size="1"
-        radius="full"
-        src={avatarUrl ?? undefined}
-        fallback={login.slice(0, 1).toUpperCase()}
-      />
-      <Text size="1" truncate>
-        {login}
-      </Text>
-      {name ? (
-        <Text size="1" color="gray" truncate>
-          {name}
-        </Text>
-      ) : null}
-    </Flex>
+    <span className="flex min-w-0 items-center gap-2">
+      <Avatar className="size-5">
+        <AvatarImage src={avatarUrl ?? undefined} />
+        <AvatarFallback className="text-[10px]">
+          {login.slice(0, 1).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <span className="truncate text-xs">{login}</span>
+      {name ? <span className="truncate text-xs text-muted-foreground">{name}</span> : null}
+    </span>
   )
 }
 
@@ -216,46 +206,44 @@ export function ReviewersButton({ pr, onChanged }: ReviewersButtonProps) {
   const pending = panel ? countPending(panel) : (observed?.pending ?? pr.pendingReviewerCount)
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Tooltip
-        content={
-          pending > 0
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              size="xs"
+              className={cn('text-sm', BUTTON_SOFT[pending > 0 ? 'amber' : 'gray'])}
+            >
+              <User />
+              Request
+              {pending > 0 ? <span className="font-bold">{pending}</span> : null}
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>
+          {pending > 0
             ? `${pending} reviewer${pending === 1 ? '' : 's'} have not answered yet - see who, or ask someone else`
-            : 'Nobody is waiting to review - see who has looked, or ask someone'
-        }
-      >
-        <Popover.Trigger>
-          <Button size="1" variant="soft" color={pending > 0 ? 'amber' : 'gray'}>
-            <PersonIcon />
-            Request
-            {pending > 0 ? <Text size="1" weight="bold">{pending}</Text> : null}
-          </Button>
-        </Popover.Trigger>
+            : 'Nobody is waiting to review - see who has looked, or ask someone'}
+        </TooltipContent>
       </Tooltip>
 
-      <Popover.Content size="1" side="top" align="end" className="reviewers-popover">
-        <Flex direction="column" gap="3">
-          <Flex align="center" justify="between" gap="3">
-            <Text size="1" weight="medium">
-              Reviewers
-            </Text>
-            {loading ? <Spinner size="1" /> : null}
-          </Flex>
+      <PopoverContent side="top" align="end" className="w-[340px] max-w-[92vw] p-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium">Reviewers</span>
+            {loading ? (
+              <Loader2 className="size-3 animate-spin text-muted-foreground" />
+            ) : null}
+          </div>
 
-          {error ? (
-            <Text size="1" color="red">
-              {error}
-            </Text>
-          ) : null}
+          {error ? <span className="text-xs text-destructive">{error}</span> : null}
 
           {panel && panel.reviewers.length === 0 && !loading ? (
-            <Text size="1" color="gray">
-              Nobody has been asked yet.
-            </Text>
+            <span className="text-xs text-muted-foreground">Nobody has been asked yet.</span>
           ) : null}
 
           {panel && panel.reviewers.length > 0 ? (
-            <Flex direction="column" gap="1">
+            <div className="flex flex-col gap-1">
               {panel.reviewers.map((reviewer) => (
                 <ReviewerRow
                   key={reviewer.login}
@@ -267,51 +255,54 @@ export function ReviewersButton({ pr, onChanged }: ReviewersButtonProps) {
                   }
                 />
               ))}
-            </Flex>
+            </div>
           ) : null}
 
           {panel?.note ? (
-            <Text size="1" color="gray">
-              {panel.note}
-            </Text>
+            <span className="text-xs text-muted-foreground">{panel.note}</span>
           ) : (
-            <Flex direction="column" gap="2">
-              <TextField.Root
-                size="1"
+            <div className="flex flex-col gap-2">
+              <Input
+                className="h-7 px-2 text-xs"
                 placeholder="Add a reviewer…"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 autoFocus
               />
-              <Box className="reviewers-scroll">
+              {/* Long collaborator lists scroll; the search box above stays put. */}
+              <div className="max-h-60 overflow-y-auto overscroll-contain">
                 {matches.length === 0 ? (
-                  <Text size="1" color="gray">
+                  <span className="text-xs text-muted-foreground">
                     {panel ? 'No collaborator matches that.' : ''}
-                  </Text>
+                  </span>
                 ) : (
-                  <Flex direction="column" gap="1">
+                  <div className="flex flex-col gap-1">
                     {matches.map((candidate) => (
                       <button
                         key={candidate.login}
                         type="button"
-                        className="reviewer-add"
+                        className="flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1 hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent"
                         disabled={busy !== null}
                         onClick={() =>
                           void edit([candidate.login], [], `Asked ${candidate.login} to review`)
                         }
                       >
                         <Person {...candidate} />
-                        {busy === candidate.login ? <Spinner size="1" /> : <PlusIcon />}
+                        {busy === candidate.login ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <Plus className="size-3.5" />
+                        )}
                       </button>
                     ))}
-                  </Flex>
+                  </div>
                 )}
-              </Box>
-            </Flex>
+              </div>
+            </div>
           )}
-        </Flex>
-      </Popover.Content>
-    </Popover.Root>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -327,31 +318,38 @@ function ReviewerRow({
   onReRequest: () => void
 }) {
   return (
-    <Flex align="center" justify="between" gap="2" className="reviewer-row">
+    <div className="flex min-h-7 items-center justify-between gap-2">
+      {/* A login and a real name both want the room, so both may be truncated. */}
       <Person login={reviewer.login} name={reviewer.name} avatarUrl={reviewer.avatarUrl} />
-      <Flex align="center" gap="1" flexShrink="0">
-        <Badge size="1" radius="full" color={STATE_COLOR[reviewer.state]}>
+      <span className="flex shrink-0 items-center gap-1">
+        <Badge className={CHIP_SOFT[STATE_COLOR[reviewer.state]]}>
           <StateIcon state={reviewer.state} />
           {STATE_LABEL[reviewer.state]}
         </Badge>
-        {busy ? <Spinner size="1" /> : null}
+        {busy ? <Loader2 className="size-3 animate-spin" /> : null}
         {/* Someone who has already answered can be asked again - a review goes
             stale the moment you push, and this is GitHub's re-request arrow. */}
         {!busy && reviewer.state !== 'pending' ? (
-          <Tooltip content={`Ask ${reviewer.login} to look again`}>
-            <IconButton size="1" variant="ghost" color="gray" onClick={onReRequest}>
-              <UpdateIcon />
-            </IconButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-xs" onClick={onReRequest}>
+                <RefreshCw />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{`Ask ${reviewer.login} to look again`}</TooltipContent>
           </Tooltip>
         ) : null}
         {!busy ? (
-          <Tooltip content={`Remove ${reviewer.login}`}>
-            <IconButton size="1" variant="ghost" color="gray" onClick={onRemove}>
-              <Cross2Icon />
-            </IconButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-xs" onClick={onRemove}>
+                <X />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{`Remove ${reviewer.login}`}</TooltipContent>
           </Tooltip>
         ) : null}
-      </Flex>
-    </Flex>
+      </span>
+    </div>
   )
 }

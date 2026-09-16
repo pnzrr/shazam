@@ -1,34 +1,11 @@
-import { IconButton, Tooltip } from '@radix-ui/themes'
+import { Loader2, Wrench } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { AgentId, AgentSession, PullRequestItem } from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { type AgentInfo, primaryAgent } from './agents.js'
 import { useToast } from './Toaster.js'
-
-/**
- * Radix's icon set has no wrench, and this is the one place the dashboard
- * needs one, so it is drawn here to the same 15x15 grid and currentColor
- * convention as the icons it sits beside.
- */
-function WrenchIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 15 15"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      focusable="false"
-    >
-      {/* Open jaw, then the handle running down to the opposite corner. */}
-      <path d="M9.9 1.6a3.6 3.6 0 0 0-3.2 5.3l-4.6 4.6a1.5 1.5 0 0 0 2.1 2.1l4.6-4.6a3.6 3.6 0 0 0 4.5-4.7l-2 2-1.9-.5-.5-1.9 2-2a3.6 3.6 0 0 0-1-.3Z" />
-    </svg>
-  )
-}
 
 export interface FixChangesButtonProps {
   pr: PullRequestItem
@@ -65,18 +42,22 @@ export function FixChangesButton({ pr, agents, defaultAgent, onLaunched }: FixCh
   }
 
   return (
-    <Tooltip content={`Open ${agent.label} on the requested changes - fix or challenge, and reply`}>
-      <IconButton
-        size="1"
-        variant="solid"
-        radius="full"
-        loading={busy}
-        className="wrench-chip"
-        aria-label={`Open ${agent.label} on the changes requested for #${pr.number}`}
-        onClick={() => void launch()}
-      >
-        <WrenchIcon />
-      </IconButton>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {/* A button among badges: it takes the chip row's height rather than a
+            button's, and keeps the solid accent fill of the Shazam button it
+            is a shortcut to. */}
+        <Button
+          size="icon-xs"
+          className="size-6 shrink-0 rounded-full"
+          disabled={busy}
+          aria-label={`Open ${agent.label} on the changes requested for #${pr.number}`}
+          onClick={() => void launch()}
+        >
+          {busy ? <Loader2 className="animate-spin" /> : <Wrench className="size-3.5" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{`Open ${agent.label} on the requested changes - fix or challenge, and reply`}</TooltipContent>
     </Tooltip>
   )
 }

@@ -1,5 +1,16 @@
-import { AlertDialog, Button, Flex, Text, TextArea } from '@radix-ui/themes'
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import type { PullRequestItem } from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { SplitActionButton } from './SplitActionButton.js'
@@ -42,38 +53,39 @@ export function ApproveButton({ pr, onDone }: { pr: PullRequestItem; onDone: () 
         menu={[{ label: 'Approve with comment…', onSelect: () => setOpen(true) }]}
       />
 
-      <AlertDialog.Root open={open} onOpenChange={setOpen}>
-        <AlertDialog.Content maxWidth="480px">
-          <AlertDialog.Title>
-            Approve {pr.repo.nameWithOwner}#{pr.number}
-          </AlertDialog.Title>
-          <AlertDialog.Description size="2">{pr.title}</AlertDialog.Description>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Approve {pr.repo.nameWithOwner}#{pr.number}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{pr.title}</AlertDialogDescription>
+          </AlertDialogHeader>
 
-          <Flex direction="column" gap="2" mt="4">
-            <Text size="2" weight="medium">
-              Comment
-            </Text>
-            <TextArea
+          <div className="mt-2 flex flex-col gap-2">
+            <span className="text-sm font-medium">Comment</span>
+            <Textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
               placeholder="LGTM"
               rows={3}
               autoFocus
             />
-          </Flex>
+          </div>
 
-          <Flex gap="3" mt="4" justify="end">
-            <AlertDialog.Cancel>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
-            </AlertDialog.Cancel>
-            <Button color="green" loading={busy} onClick={() => void approve(body)}>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              className="bg-success text-success-foreground hover:bg-success/90"
+              disabled={busy}
+              onClick={() => void approve(body)}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : null}
               Approve
             </Button>
-          </Flex>
-        </AlertDialog.Content>
-      </AlertDialog.Root>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

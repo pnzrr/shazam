@@ -1,5 +1,16 @@
-import { AlertDialog, Button, Flex, Text, TextArea } from '@radix-ui/themes'
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import type { IssueItem } from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { SplitActionButton } from './SplitActionButton.js'
@@ -42,38 +53,35 @@ export function CloseIssueButton({ issue, onDone }: { issue: IssueItem; onDone: 
         menu={[{ label: 'Close with comment…', onSelect: () => setOpen(true) }]}
       />
 
-      <AlertDialog.Root open={open} onOpenChange={setOpen}>
-        <AlertDialog.Content maxWidth="480px">
-          <AlertDialog.Title>
-            Close {issue.repo.nameWithOwner}#{issue.number}
-          </AlertDialog.Title>
-          <AlertDialog.Description size="2">{issue.title}</AlertDialog.Description>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Close {issue.repo.nameWithOwner}#{issue.number}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{issue.title}</AlertDialogDescription>
+          </AlertDialogHeader>
 
-          <Flex direction="column" gap="2" mt="4">
-            <Text size="2" weight="medium">
-              Closing comment
-            </Text>
-            <TextArea
+          <div className="mt-2 flex flex-col gap-2">
+            <span className="text-sm font-medium">Closing comment</span>
+            <Textarea
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="Fixed in #123"
               rows={3}
               autoFocus
             />
-          </Flex>
+          </div>
 
-          <Flex gap="3" mt="4" justify="end">
-            <AlertDialog.Cancel>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
-            </AlertDialog.Cancel>
-            <Button color="red" loading={busy} onClick={() => void close(comment)}>
+          <AlertDialogFooter className="mt-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" disabled={busy} onClick={() => void close(comment)}>
+              {busy ? <Loader2 className="animate-spin" /> : null}
               Close issue
             </Button>
-          </Flex>
-        </AlertDialog.Content>
-      </AlertDialog.Root>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
