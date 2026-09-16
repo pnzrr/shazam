@@ -11,6 +11,7 @@ import {
 import type { AgentSession, DashboardItem } from '../shared/types.js'
 import './app.css'
 import { DashboardColumn } from './components/DashboardColumn.js'
+import { FilterBar } from './components/FilterBar.js'
 import { FilterChips } from './components/FilterChips.js'
 import { TerminalDock } from './components/TerminalDock.js'
 import { Toaster } from './components/Toaster.js'
@@ -22,6 +23,7 @@ import { useDashboard } from './hooks/useDashboard.js'
 import { useHealth } from './hooks/useHealth.js'
 import { useSessions } from './hooks/useSessions.js'
 import { useAppearance } from './lib/appearance.js'
+import { matchesFilter, parseFilter } from './lib/filter.js'
 import { relativeTime } from './lib/format.js'
 
 const FILTER_KEY = 'shazam.owners'
@@ -53,12 +55,21 @@ function loadFilter(): Set<string> {
   }
 }
 
+/**
+ * The filter text lives in `?q=` rather than localStorage so a filtered view
+ * is a shareable URL and a reload lands where you left off.
+ */
+function initialQuery(): string {
+  return new URLSearchParams(window.location.search).get('q') ?? ''
+}
+
 export function App() {
   const [appearance, toggleAppearance] = useAppearance()
   const health = useHealth()
   const dashboard = useDashboard(health?.pollIntervalMs ?? 60_000)
   const sessions = useSessions()
   const [owners, setOwners] = useState<Set<string>>(loadFilter)
+  const [query, setQuery] = useState<string>(initialQuery)
   // Which tile you last touched, so you can find your place after coming back
   // from GitHub or an agent session. Deliberately not persisted: it is a marker
   // for the current sitting, not a saved selection.
@@ -91,6 +102,20 @@ export function App() {
   )
 
   const data = dashboard.data
+
+  const parsedQuery = useMemo(() => parseFilter(query), [query])
+
+  // Debounced so typing does not spam the history API; replaceState keeps the
+  // filter out of the back button's way.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const url = new URL(window.location.href)
+      if (query) url.searchParams.set('q', query)
+      else url.searchParams.delete('q')
+      window.history.replaceState(null, '', url)
+    }, 300)
+    return () => window.clearTimeout(handle)
+  }, [query])
 
   useEffect(() => {
     if (dismissed.size === 0) return
@@ -140,7 +165,9 @@ export function App() {
 
   const filter = (items: DashboardItem[]) => {
     const visible = items.filter((item) => !dismissed.has(item.id))
-    return owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
+    const byOwner =
+      owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
+    return byOwner.filter((item) => matchesFilter(item, parsedQuery))
   }
 
   if (dashboard.unauthorized) {
@@ -222,6 +249,10 @@ export function App() {
                 {appearance === 'dark' ? 'Switch to light' : 'Switch to dark'}
               </TooltipContent>
             </Tooltip>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
+            <FilterBar value={query} onChange={setQuery} />
           </div>
 
           {dashboard.error || data?.error || toolWarnings.length > 0 ? (
