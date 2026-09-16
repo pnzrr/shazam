@@ -131,20 +131,28 @@ Whatever survives both is what the button sends, and the tooltip names it. The
 comment dialog offers only those methods too. If a repository has disabled all
 three, Merge is greyed out rather than letting you click into a failure.
 
-A PR whose review asked for changes grows a **wrench** next to the `changes`
-chip, in the Shazam button's own fill because it is a shortcut to the same
-thing: it opens the same worktree with the default agent, but on
-`shazamChangesPrompt` instead of `shazamPrompt` — read every review comment and
-requested change, fix what is right to fix, argue where the reviewer is wrong
-rather than quietly complying, and reply on the thread either way. It is only
-rendered where there is something to answer, so a wrench on a tile is itself
-the signal that a reviewer is waiting on you.
+Two chips grow a **wrench** beside them, in the Shazam button's own fill
+because each is a shortcut to the same thing: the same worktree with the same
+agent, opened on a different prompt instead of asked to read and wait.
+
+- Next to `changes`, on `shazamChangesPrompt` — read every review comment and
+  requested change, fix what is right to fix, argue where the reviewer is wrong
+  rather than quietly complying, and reply on the thread either way.
+- Next to `conflict`, on `shazamConflictPrompt` — read both sides, bring the
+  base branch in the way this repository usually does, resolve on the merits,
+  run the tests, then commit and push to the PR branch.
+
+Each is rendered only where there is something to fix, so a wrench on a tile is
+itself the signal that the tile needs you.
 
 Every PR row also has a **Shazam** button. Owner filter chips in the header are
 derived from whatever is on screen, so they need no configuration.
 
 Every tile is itself a link: clicking anywhere that is not a button or a chip
-opens the PR or issue on GitHub. The status chips deep-link into the relevant
+opens the PR or issue on GitHub. Beside each title's external-link icon is a
+copy icon, so the two readings of a title are one click apart — open it, or
+take the URL somewhere else. It confirms with a tick rather than a toast,
+because copying links is something you do several times in a row. The status chips deep-link into the relevant
 tab instead — checks to `/checks`, the conflict marker to GitHub's conflict
 resolver at `/conflicts`, and the `+/-` diff stat to `/files`.
 
@@ -241,13 +249,14 @@ Optional, at `~/.shazam/config.json`:
   "trustWorktrees": true,
   "terminalFontSize": 20,
   "shazamPrompt": "You are working on pull request {url}. ...",
-  "shazamChangesPrompt": "You are working on pull request {url}, where a reviewer has requested changes. ..."
+  "shazamChangesPrompt": "You are working on pull request {url}, where a reviewer has requested changes. ...",
+  "shazamConflictPrompt": "You are working on pull request {url}, which has a merge conflict with its base branch. ..."
 }
 ```
 
-`shazamPrompt` is what a plain Shazam opens with; `shazamChangesPrompt` is what
-the wrench opens with. Both substitute `{url}`, `{number}`, `{repo}`, `{path}`
-and `{branch}`.
+`shazamPrompt` is what a plain Shazam opens with; `shazamChangesPrompt` and
+`shazamConflictPrompt` are what the two wrenches open with. All three
+substitute `{url}`, `{number}`, `{repo}`, `{path}` and `{branch}`.
 
 `defaultAgent` is the agent both of them open — the primary half of the Shazam
 split button, and the wrench. Where that agent is not installed, they fall back
@@ -260,7 +269,7 @@ to whichever one is.
   in `gh auth status`. shazam never stores a GitHub credential of its own.
 - **Polling.** The server polls GitHub on an interval into an in-memory cache
   and the browser reads that cache, so extra tabs and manual refreshes cost no
-  API quota. One GraphQL request covers all four columns, plus a second for the
+  API quota. One GraphQL request per column, in parallel, plus one for the
   merge states of the PRs that could merge. Remaining rate limit is in the
   header.
 - **Access control.** The dashboard can spawn shells, so `/api` and `/ws` require

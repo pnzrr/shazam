@@ -14,7 +14,7 @@ const repoRefSchema = z.object({ nameWithOwner: z.string().min(1), url: z.string
 
 const shazamSchema = z.object({
   agent: z.enum(['claude', 'codex']),
-  intent: z.enum(['brief', 'address']).default('brief'),
+  intent: z.enum(['brief', 'address', 'conflict']).default('brief'),
   pr: z.object({
     url: z.string().url(),
     number: z.number().int().positive(),

@@ -255,9 +255,10 @@ export type AgentId = 'claude' | 'codex'
 /**
  * What a session is being opened to do, which in practice is a choice of
  * opening prompt. `brief` reads the pull request and waits for instruction;
- * `address` goes straight at the changes a reviewer asked for.
+ * `address` goes straight at the changes a reviewer asked for; `conflict`
+ * goes at the merge conflict holding the branch up.
  */
-export type ShazamIntent = 'brief' | 'address'
+export type ShazamIntent = 'brief' | 'address' | 'conflict'
 
 export type SessionStatus = 'preparing' | 'running' | 'exited' | 'failed'
 

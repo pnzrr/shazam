@@ -4,9 +4,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import type { AgentSession, PullRequestItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
+import { FixChangesButton, FixConflictButton } from './AgentFixButton.js'
 import { ApproveButton } from './ApproveButton.js'
 import { AuthorAvatar } from './AuthorAvatar.js'
-import { FixChangesButton } from './FixChangesButton.js'
+import { CopyLinkButton } from './CopyLinkButton.js'
 import { MergeButton } from './MergeButton.js'
 import { ReviewersButton } from './ReviewersButton.js'
 import { ShazamButton } from './ShazamButton.js'
@@ -51,14 +52,17 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
           <span className="text-sm text-muted-foreground">
             {pr.repo.nameWithOwner} #{pr.number}
           </span>
-          <a
-            href={pr.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
-          >
-            {pr.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
-          </a>
+          <div className="min-w-0">
+            <a
+              href={pr.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
+            >
+              {pr.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
+            </a>
+            <CopyLinkButton url={pr.url} what={`${pr.repo.nameWithOwner} #${pr.number}`} />
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <Tooltip>
@@ -88,6 +92,14 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
           />
         ) : null}
         <ConflictChip state={pr.mergeable} prUrl={pr.url} />
+        {pr.mergeable === 'conflicting' ? (
+          <FixConflictButton
+            pr={pr}
+            agents={ctx.agents}
+            defaultAgent={ctx.defaultAgent}
+            onLaunched={onLaunched}
+          />
+        ) : null}
         <CommentsChip
           count={pr.commentCount}
           threads={pr.unresolvedThreadCount}

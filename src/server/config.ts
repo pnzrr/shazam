@@ -64,6 +64,35 @@ const configSchema = z.object({
         'why you did not. Tell me what you plan to do before you push anything.',
       ].join('\n'),
     ),
+  /**
+   * Used instead of `shazamPrompt` when a session is opened from the wrench on
+   * a pull request that conflicts with its base. Same substitutions.
+   */
+  shazamConflictPrompt: z
+    .string()
+    .default(
+      [
+        'You are working on pull request {url}, which has a merge conflict with its base branch.',
+        '',
+        'You are in a git worktree at {path}, checked out to branch `{branch}` of {repo}.',
+        'This worktree is dedicated to PR #{number}; you can commit and push from here.',
+        '',
+        'Resolve it and get the branch mergeable again:',
+        '',
+        '1. `gh pr view {url}` for what this PR is for, and read the history on both',
+        '   sides so you know what each side of the conflict was trying to do.',
+        '2. Bring the base branch in - merge or rebase, whichever matches how this',
+        '   repository has done it recently - and resolve every conflicting hunk.',
+        '3. Resolve on the merits. Where both sides can stand, keep both. Where they',
+        '   cannot, decide which survives and be able to say why. Never take one side',
+        '   wholesale without reading what you are discarding.',
+        '4. Build it and run the tests before committing.',
+        '5. Commit and push to the PR branch.',
+        '',
+        'Then tell me what conflicted and how you resolved it. If the right resolution',
+        'is a judgement call rather than a mechanical one, stop and ask me first.',
+      ].join('\n'),
+    ),
 })
 
 export type Config = z.infer<typeof configSchema> & {

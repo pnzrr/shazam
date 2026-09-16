@@ -1,8 +1,16 @@
 /**
- * One request per poll. Five aliased searches plus rateLimit means the whole
- * dashboard costs a single round trip no matter how many columns are on screen.
+ * One request per column, not one per poll.
+ *
+ * All five searches used to ride in a single request, which was a nice
+ * property right up until the fifth column: GitHub runs each search, and the
+ * whole thing started landing at 10-12s against a roughly 10s ceiling, so
+ * something like two polls in five came back as a timeout or the 502 that
+ * nginx turns it into. Split, each request is comfortably inside the limit,
+ * they go out in parallel so the wall time is the slowest one rather than the
+ * sum, and a column that does fail no longer takes the other four with it.
  */
-export const DASHBOARD_QUERY = /* GraphQL */ `
+
+const REPO_FRAGMENT = /* GraphQL */ `
   fragment RepoFields on Repository {
     nameWithOwner
     name
@@ -11,7 +19,9 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
       login
     }
   }
+`
 
+const PR_FRAGMENT = /* GraphQL */ `
   fragment PrFields on PullRequest {
     id
     number
@@ -61,7 +71,9 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
       }
     }
   }
+`
 
+const ISSUE_FRAGMENT = /* GraphQL */ `
   fragment IssueFields on Issue {
     id
     number
@@ -86,35 +98,51 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
       }
     }
   }
+`
 
-  query Dashboard(
-    $myPullRequests: String!
-    $reviewRequests: String!
-    $approvedPrs: String!
-    $myIssues: String!
-    $myIssuesAssigned: String!
-    $limit: Int!
-  ) {
-    viewer {
-      login
-    }
-    myPullRequests: search(query: $myPullRequests, type: ISSUE, first: $limit) {
+/**
+ * Carried by every column's request rather than costing a sixth. Both are
+ * near-free next to a search, and having them on each one means the viewer's
+ * login and the remaining quota survive any single column failing.
+ */
+const CONTEXT_FIELDS = /* GraphQL */ `
+  viewer {
+    login
+  }
+  rateLimit {
+    limit
+    remaining
+    resetAt
+  }
+`
+
+export const PR_SEARCH_QUERY = /* GraphQL */ `
+  ${REPO_FRAGMENT}
+  ${PR_FRAGMENT}
+  query PrSearch($search: String!, $limit: Int!) {
+    ${CONTEXT_FIELDS}
+    search(query: $search, type: ISSUE, first: $limit) {
       nodes {
         ...PrFields
       }
     }
-    reviewRequests: search(query: $reviewRequests, type: ISSUE, first: $limit) {
+  }
+`
+
+/**
+ * The approved column pays for review nodes the others do not need: search can
+ * say "the viewer reviewed it" but not "the viewer's review was an approval",
+ * so the poller reads the viewer's standing verdict off each row and keeps the
+ * approved ones.
+ */
+export const APPROVED_PR_SEARCH_QUERY = /* GraphQL */ `
+  ${REPO_FRAGMENT}
+  ${PR_FRAGMENT}
+  query ApprovedPrSearch($search: String!, $limit: Int!) {
+    ${CONTEXT_FIELDS}
+    search(query: $search, type: ISSUE, first: $limit) {
       nodes {
         ...PrFields
-      }
-    }
-    approvedPrs: search(query: $approvedPrs, type: ISSUE, first: $limit) {
-      nodes {
-        ...PrFields
-        # Only this search pays for the review nodes: search can say "the
-        # viewer reviewed it" but not "the viewer's review was an approval",
-        # so the poller reads the viewer's standing verdict off each row and
-        # keeps the approved ones.
         ... on PullRequest {
           latestOpinionatedReviews(first: 10) {
             nodes {
@@ -127,20 +155,18 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
         }
       }
     }
-    myIssues: search(query: $myIssues, type: ISSUE, first: $limit) {
+  }
+`
+
+export const ISSUE_SEARCH_QUERY = /* GraphQL */ `
+  ${REPO_FRAGMENT}
+  ${ISSUE_FRAGMENT}
+  query IssueSearch($search: String!, $limit: Int!) {
+    ${CONTEXT_FIELDS}
+    search(query: $search, type: ISSUE, first: $limit) {
       nodes {
         ...IssueFields
       }
-    }
-    myIssuesAssigned: search(query: $myIssuesAssigned, type: ISSUE, first: $limit) {
-      nodes {
-        ...IssueFields
-      }
-    }
-    rateLimit {
-      limit
-      remaining
-      resetAt
     }
   }
 `
