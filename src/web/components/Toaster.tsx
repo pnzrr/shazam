@@ -45,7 +45,10 @@ export function Toaster({ children }: { children: ReactNode }) {
   const push = useCallback(
     (message: string, tone: Tone = 'info') => {
       const id = nextId++
-      setToasts((current) => [...current, { id, tone, message }])
+      // Capped: a burst (a poll's worth of alerts, a flurry of actions) shows
+      // its newest four rather than wallpapering the corner. Dropped toasts'
+      // timers fire on nothing.
+      setToasts((current) => [...current, { id, tone, message }].slice(-4))
       // Errors tend to carry gh output worth reading, so they linger.
       setTimeout(() => dismiss(id), tone === 'error' ? 12_000 : 5_000)
     },
@@ -57,7 +60,8 @@ export function Toaster({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed right-4 bottom-4 z-50 flex max-w-[420px] flex-col gap-2">
+      {/* Top-right, away from the terminal dock's corner; newest at the top. */}
+      <div className="fixed top-4 right-4 z-50 flex max-w-[420px] flex-col-reverse gap-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
