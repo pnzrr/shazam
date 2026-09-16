@@ -13,6 +13,7 @@ import './app.css'
 import { DashboardColumn } from './components/DashboardColumn.js'
 import { FilterBar } from './components/FilterBar.js'
 import { FilterChips } from './components/FilterChips.js'
+import { KeyboardHelp } from './components/KeyboardHelp.js'
 import { TerminalDock } from './components/TerminalDock.js'
 import { Toaster } from './components/Toaster.js'
 import { TokenGate } from './components/TokenGate.js'
@@ -284,25 +285,6 @@ export function App() {
               />
             </div>
 
-            {data?.rateLimit ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-xs text-muted-foreground">
-                    {data.rateLimit.remaining}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {`GitHub API: ${data.rateLimit.remaining} of ${data.rateLimit.limit} left, resets ${relativeTime(data.rateLimit.resetAt)}`}
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
-
-            {data ? (
-              <span className="text-xs text-muted-foreground">
-                {relativeTime(data.fetchedAt)}
-              </span>
-            ) : null}
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -315,7 +297,20 @@ export function App() {
                   {dashboard.refreshing ? <RefreshCw className="animate-spin" /> : <RefreshCw />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Refresh now</TooltipContent>
+              {/* The freshness and rate-limit readouts live here rather than as
+                  their own header text: they answer "should I refresh?", which
+                  is a question you ask at this button. */}
+              <TooltipContent>
+                <div className="flex flex-col gap-0.5">
+                  <span>Refresh now</span>
+                  {data ? <span className="opacity-80">Updated {relativeTime(data.fetchedAt)}</span> : null}
+                  {data?.rateLimit ? (
+                    <span className="opacity-80">
+                      {`GitHub API: ${data.rateLimit.remaining} of ${data.rateLimit.limit} left, resets ${relativeTime(data.rateLimit.resetAt)}`}
+                    </span>
+                  ) : null}
+                </div>
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -439,6 +434,7 @@ export function App() {
             fontSize={health?.terminalFontSize ?? 20}
             onStatus={(session) => sessions.update(session)}
           />
+          <KeyboardHelp />
         </div>
       </Toaster>
     </TooltipProvider>
