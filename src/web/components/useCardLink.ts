@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react'
+import { cn } from '@/lib/utils'
 
 export interface CardLinkOptions {
   url: string
@@ -23,7 +24,15 @@ export function useCardLink({ url, isLastClicked, onClicked }: CardLinkOptions) 
 
   return {
     'aria-current': isLastClicked || undefined,
-    className: `row-card is-clickable${isLastClicked ? ' is-last-clicked' : ''}`,
+    // An inset ring hugs the card's real bounds whatever width we draw; the
+    // `group` lets the title underline on any hover over the card. The tile
+    // touched most recently keeps its 2px ring however it was touched.
+    className: cn(
+      'group cursor-pointer transition-shadow',
+      isLastClicked
+        ? 'ring-2 ring-primary ring-inset'
+        : 'hover:ring-1 hover:ring-primary/60 hover:ring-inset',
+    ),
     // Capture phase, so shazam, merge, approve, close, the deep-link chips and
     // the title anchor all mark the tile even though they handle the click
     // themselves and stop it reaching the card.

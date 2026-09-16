@@ -134,84 +134,6 @@
   align-items: stretch;
 }
 
-.column {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-}
-
-.column-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.column-empty {
-  padding: var(--space-4) var(--space-2);
-}
-
-/*
- * List type runs larger than the chrome around it. Radix derives every font
- * size from --scaling, so multiplying the tokens here keeps the theme's own
- * scaling preference intact and lifts line heights in step, which plain
- * font-size overrides would not.
- *
- */
-.grid {
-  --list-font-scale: 1.25;
-  --font-size-1: calc(12px * var(--scaling) * var(--list-font-scale));
-  --font-size-2: calc(14px * var(--scaling) * var(--list-font-scale));
-  --font-size-3: calc(16px * var(--scaling) * var(--list-font-scale));
-  --font-size-4: calc(18px * var(--scaling) * var(--list-font-scale));
-  --font-size-5: calc(20px * var(--scaling) * var(--list-font-scale));
-  --font-size-6: calc(24px * var(--scaling) * var(--list-font-scale));
-  --line-height-1: calc(16px * var(--scaling) * var(--list-font-scale));
-  --line-height-2: calc(20px * var(--scaling) * var(--list-font-scale));
-  --line-height-3: calc(24px * var(--scaling) * var(--list-font-scale));
-  --line-height-4: calc(26px * var(--scaling) * var(--list-font-scale));
-  --line-height-5: calc(28px * var(--scaling) * var(--list-font-scale));
-  --line-height-6: calc(30px * var(--scaling) * var(--list-font-scale));
-}
-
-/*
- * Radix draws a Card's edge on a ::after pseudo-element, not as a border, so
- * restyling that edge means overriding that element's shadow. Pinning inset to
- * 0 makes the ring hug the card's real bounds whatever width we draw.
- */
-.row-card::after {
-  transition: box-shadow 120ms ease;
-}
-
-/* The whole tile is a link to the PR or issue; its controls opt out in JS. */
-.row-card.is-clickable {
-  cursor: pointer;
-}
-
-.row-card.is-clickable:hover::after {
-  inset: 0;
-  box-shadow: inset 0 0 0 1px var(--accent-a8);
-}
-
-/* The tile touched most recently, however it was touched. */
-.row-card.is-last-clicked::after,
-.row-card.is-last-clicked:hover::after {
-  inset: 0;
-  box-shadow: inset 0 0 0 2px var(--accent-9);
-}
-
-.row-card.is-clickable:focus-visible,
-.row-title:focus-visible {
-  outline: 2px solid var(--focus-8);
-  outline-offset: 2px;
-}
-
-.row-card.is-clickable:hover .row-title {
-  text-decoration: underline;
-}
-
-.row-title {
-  color: var(--accent-11);
-}
-
 /* --- rendered comment bodies -------------------------------------------- */
 
 /*
@@ -333,21 +255,6 @@
 
 .comment-html .task-list-item input {
   margin-right: 0.25rem;
-}
-
-/* Long titles must wrap rather than push the timestamp off the card. */
-.row-heading {
-  min-width: 0;
-}
-
-.row-time {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.inline-icon {
-  opacity: 0.5;
-  vertical-align: -1px;
 }
 
 /* --- terminal dock ------------------------------------------------------ */
