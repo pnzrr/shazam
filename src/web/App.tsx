@@ -225,7 +225,7 @@ export function App() {
           </div>
 
           {dashboard.error || data?.error || toolWarnings.length > 0 ? (
-            <div className="flex flex-col gap-1 px-4 pb-2">
+            <div className="flex flex-col gap-1 px-4 pt-3">
               {dashboard.error ? (
                 <Alert variant="destructive" className="border-destructive/50 px-3 py-2">
                   <TriangleAlert />
@@ -254,9 +254,10 @@ export function App() {
             </div>
           ) : null}
 
-          {/* The grid takes the space the dock leaves, and each column scrolls
-              on its own. */}
-          <div className="flex min-h-0 flex-1 items-stretch gap-3 px-4 pb-3">
+          {/* The row takes the space the dock leaves. Columns hold a fixed
+              width, the row scrolls sideways when they overflow the window,
+              and each column still scrolls vertically on its own. */}
+          <div className="flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3">
             {COLUMNS.map((column) => {
               const all = data ? column.select(data) : []
               const items = filter(all)
