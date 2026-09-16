@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import type { AgentSession, DashboardItem } from '../shared/types.js'
+import type { AgentSession, ColumnId, DashboardItem } from '../shared/types.js'
 import './app.css'
 import { DashboardColumn } from './components/DashboardColumn.js'
 import { FilterBar } from './components/FilterBar.js'
@@ -29,6 +29,7 @@ import { matchesFilter, parseFilter } from './lib/filter.js'
 import { relativeTime } from './lib/format.js'
 
 const FILTER_KEY = 'shazam.owners'
+const COLLAPSED_KEY = 'shazam.collapsed'
 
 /**
  * How long a row stays hidden after you act on it. Long enough for GitHub's
@@ -52,6 +53,20 @@ function loadFilter(): Set<string> {
   try {
     const raw = localStorage.getItem(FILTER_KEY)
     return new Set(raw ? (JSON.parse(raw) as string[]) : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function loadCollapsed(): Set<ColumnId> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(parsed)) return new Set()
+    // Ids are validated against the live registry, so a column that was
+    // renamed or removed cannot leave a phantom entry behind.
+    const known = new Set<string>(COLUMNS.map((column) => column.id))
+    return new Set(parsed.filter((id): id is ColumnId => typeof id === 'string' && known.has(id)))
   } catch {
     return new Set()
   }
@@ -86,6 +101,23 @@ export function App() {
    * Entries expire, so anything the action did not actually remove comes back.
    */
   const [dismissed, setDismissed] = useState<Map<string, number>>(new Map())
+  // Collapsed columns persist across sessions: which lists you care about is
+  // a lasting preference, unlike the per-sitting lastClickedId above.
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<ColumnId>>(loadCollapsed)
+
+  const toggleCollapsed = useCallback((id: ColumnId) => {
+    setCollapsedColumns((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]))
+      } catch {
+        // storage disabled
+      }
+      return next
+    })
+  }, [])
 
   const persistOwners = useCallback((next: Set<string>) => {
     setOwners(next)
@@ -332,6 +364,8 @@ export function App() {
                   items={items}
                   hiddenCount={all.length - items.length}
                   ctx={ctx}
+                  collapsed={collapsedColumns.has(column.id)}
+                  onToggleCollapse={() => toggleCollapsed(column.id)}
                 />
               )
             })}

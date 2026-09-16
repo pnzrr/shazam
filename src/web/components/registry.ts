@@ -45,6 +45,12 @@ export interface ColumnDef {
   title: string
   hint: string
   empty: string
+  /**
+   * Tailwind bg-* class for the little status dot in the column header, so a
+   * glance at the board separates the columns the way GitHub Projects does.
+   * Optional: a column without one simply renders no dot.
+   */
+  dot?: string
   select: (data: DashboardData) => DashboardItem[]
   renderItem: (item: DashboardItem, ctx: ColumnContext) => ReactNode
 }

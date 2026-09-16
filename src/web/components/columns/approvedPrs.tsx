@@ -4,6 +4,7 @@ import type { ColumnDef } from '../registry.js'
 export const approvedPrs: ColumnDef = {
   id: 'approvedPrs',
   title: 'Approved, awaiting merge',
+  dot: 'bg-emerald-500',
   hint: 'You approved these and they have not merged yet',
   empty: 'Nothing you approved is waiting.',
   select: (data) => data.columns.approvedPrs,
