@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import type { IssueItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
+import { AuthorAvatar } from './AuthorAvatar.js'
 import { CloseIssueButton } from './CloseIssueButton.js'
 import { CommentsChip } from './StatusIcons.js'
 import { useCardLink } from './useCardLink.js'
@@ -30,37 +31,50 @@ function labelColors(hex: string): { background: string; color: string } {
 
 export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext }) {
   const link = useCardLink({
+    id: issue.id,
     url: issue.url,
     isLastClicked: ctx.lastClickedId === issue.id,
     onClicked: () => ctx.onTileClicked(issue.id),
   })
 
   return (
-    <Card {...link} className={cn('gap-2 rounded-lg p-3', link.className)}>
+    <Card
+      {...link}
+      className={cn(
+        'gap-2 rounded-lg p-3 group-data-[density=compact]/density:gap-1 group-data-[density=compact]/density:p-2',
+        link.className,
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-sm text-muted-foreground">
             {issue.repo.nameWithOwner} #{issue.number}
-            {issue.author && issue.author !== ctx.viewer ? ` · ${issue.author}` : ''}
           </span>
           <a
             href={issue.url}
             target="_blank"
             rel="noreferrer"
-            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
           >
             {issue.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
           </a>
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground">
-              {relativeTime(issue.updatedAt)}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{absoluteTime(issue.updatedAt)}</TooltipContent>
-        </Tooltip>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="whitespace-nowrap text-sm text-muted-foreground">
+                {relativeTime(issue.updatedAt)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{absoluteTime(issue.updatedAt)}</TooltipContent>
+          </Tooltip>
+          {/* Only for other people's work: your own avatar on your own issue
+              would say nothing. Same gate the old `· author` suffix used. */}
+          {issue.author && issue.author !== ctx.viewer ? (
+            <AuthorAvatar login={issue.author} />
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

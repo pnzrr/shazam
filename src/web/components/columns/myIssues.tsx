@@ -4,6 +4,7 @@ import type { ColumnDef } from '../registry.js'
 export const myIssues: ColumnDef = {
   id: 'myIssues',
   title: 'Issues I opened',
+  dot: 'bg-muted-foreground',
   hint: 'Open issues you opened, most recently updated first',
   empty: 'No open issues of yours.',
   select: (data) => data.columns.myIssues,

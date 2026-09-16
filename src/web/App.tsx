@@ -1,4 +1,4 @@
-import { Moon, RefreshCw, Sun, TriangleAlert } from 'lucide-react'
+import { Moon, RefreshCw, Rows3, Rows4, Sun, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import type { AgentSession, DashboardItem } from '../shared/types.js'
+import type { AgentSession, ColumnId, DashboardItem } from '../shared/types.js'
 import './app.css'
 import { DashboardColumn } from './components/DashboardColumn.js'
 import { FilterBar } from './components/FilterBar.js'
@@ -20,15 +20,18 @@ import { ViewTabs } from './components/ViewTabs.js'
 import { COLUMNS } from './components/columns/index.js'
 import type { ColumnContext } from './components/registry.js'
 import { ownerOf } from './components/registry.js'
+import { useBoardKeys } from './hooks/useBoardKeys.js'
 import { useDashboard } from './hooks/useDashboard.js'
 import { useHealth } from './hooks/useHealth.js'
 import { activeViewQuery, useSavedViews } from './hooks/useSavedViews.js'
 import { useSessions } from './hooks/useSessions.js'
 import { useAppearance } from './lib/appearance.js'
+import { useDensity } from './lib/density.js'
 import { matchesFilter, parseFilter } from './lib/filter.js'
 import { relativeTime } from './lib/format.js'
 
 const FILTER_KEY = 'shazam.owners'
+const COLLAPSED_KEY = 'shazam.collapsed'
 
 /**
  * How long a row stays hidden after you act on it. Long enough for GitHub's
@@ -57,6 +60,20 @@ function loadFilter(): Set<string> {
   }
 }
 
+function loadCollapsed(): Set<ColumnId> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(parsed)) return new Set()
+    // Ids are validated against the live registry, so a column that was
+    // renamed or removed cannot leave a phantom entry behind.
+    const known = new Set<string>(COLUMNS.map((column) => column.id))
+    return new Set(parsed.filter((id): id is ColumnId => typeof id === 'string' && known.has(id)))
+  } catch {
+    return new Set()
+  }
+}
+
 /**
  * The filter text lives in `?q=` rather than localStorage so a filtered view
  * is a shareable URL and a reload lands where you left off. A URL without one
@@ -69,6 +86,7 @@ function initialQuery(): string {
 
 export function App() {
   const [appearance, toggleAppearance] = useAppearance()
+  const [density, toggleDensity] = useDensity()
   const health = useHealth()
   const dashboard = useDashboard(health?.pollIntervalMs ?? 60_000)
   const sessions = useSessions()
@@ -86,6 +104,23 @@ export function App() {
    * Entries expire, so anything the action did not actually remove comes back.
    */
   const [dismissed, setDismissed] = useState<Map<string, number>>(new Map())
+  // Collapsed columns persist across sessions: which lists you care about is
+  // a lasting preference, unlike the per-sitting lastClickedId above.
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<ColumnId>>(loadCollapsed)
+
+  const toggleCollapsed = useCallback((id: ColumnId) => {
+    setCollapsedColumns((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]))
+      } catch {
+        // storage disabled
+      }
+      return next
+    })
+  }, [])
 
   const persistOwners = useCallback((next: Set<string>) => {
     setOwners(next)
@@ -184,12 +219,40 @@ export function App() {
     persistOwners(new Set(view?.owners ?? []))
   }
 
-  const filter = (items: DashboardItem[]) => {
-    const visible = items.filter((item) => !dismissed.has(item.id))
-    const byOwner =
-      owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
-    return byOwner.filter((item) => matchesFilter(item, parsedQuery))
-  }
+  // Memoized (unlike the old per-render filter closure) because the keyboard
+  // cursor below needs the same visible lists the columns render - computing
+  // them once keeps the two views of "what is on screen" identical.
+  const visibleByColumn = useMemo(() => {
+    const map = new Map<ColumnId, DashboardItem[]>()
+    if (!data) return map
+    for (const column of COLUMNS) {
+      const visible = column.select(data).filter((item) => !dismissed.has(item.id))
+      const byOwner =
+        owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
+      map.set(
+        column.id,
+        byOwner.filter((item) => matchesFilter(item, parsedQuery)),
+      )
+    }
+    return map
+  }, [data, dismissed, owners, parsedQuery])
+
+  // j/k walk the cards in reading order: column by column, top to bottom.
+  // Collapsed columns render no cards, so the cursor skips them.
+  const cursorItems = useMemo(
+    () =>
+      COLUMNS.flatMap((column) =>
+        collapsedColumns.has(column.id)
+          ? []
+          : (visibleByColumn.get(column.id) ?? []).map((item) => ({
+              id: item.id,
+              url: item.url,
+            })),
+      ),
+    [visibleByColumn, collapsedColumns],
+  )
+
+  useBoardKeys(cursorItems, lastClickedId, setLastClickedId)
 
   if (dashboard.unauthorized) {
     return (
@@ -261,6 +324,24 @@ export function App() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground"
+                  onClick={toggleDensity}
+                >
+                  {/* Like the theme toggle, the icon shows where the click
+                      takes you, not where you are. */}
+                  {density === 'compact' ? <Rows3 /> : <Rows4 />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {density === 'compact' ? 'Switch to comfortable' : 'Switch to compact'}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
                   onClick={toggleAppearance}
                 >
                   {appearance === 'dark' ? <Sun /> : <Moon />}
@@ -320,11 +401,17 @@ export function App() {
 
           {/* The row takes the space the dock leaves. Columns hold a fixed
               width, the row scrolls sideways when they overflow the window,
-              and each column still scrolls vertically on its own. */}
-          <div className="flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3">
+              and each column still scrolls vertically on its own.
+              data-density + group/density is how the cards learn the density:
+              one attribute here, group variants down in the leaves, and no
+              prop has to thread through the column registry. */}
+          <div
+            className="group/density flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto px-4 py-3"
+            data-density={density}
+          >
             {COLUMNS.map((column) => {
               const all = data ? column.select(data) : []
-              const items = filter(all)
+              const items = visibleByColumn.get(column.id) ?? []
               return (
                 <DashboardColumn
                   key={column.id}
@@ -332,6 +419,8 @@ export function App() {
                   items={items}
                   hiddenCount={all.length - items.length}
                   ctx={ctx}
+                  collapsed={collapsedColumns.has(column.id)}
+                  onToggleCollapse={() => toggleCollapsed(column.id)}
                 />
               )
             })}

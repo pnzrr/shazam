@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import type { AgentSession, PullRequestItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
 import { ApproveButton } from './ApproveButton.js'
+import { AuthorAvatar } from './AuthorAvatar.js'
 import { FixChangesButton } from './FixChangesButton.js'
 import { MergeButton } from './MergeButton.js'
 import { ReviewersButton } from './ReviewersButton.js'
@@ -30,37 +31,48 @@ export interface PrCardProps {
 export function PrCard({ pr, ctx, action }: PrCardProps) {
   const onLaunched = (session: AgentSession) => ctx.onSessionLaunched(session)
   const link = useCardLink({
+    id: pr.id,
     url: pr.url,
     isLastClicked: ctx.lastClickedId === pr.id,
     onClicked: () => ctx.onTileClicked(pr.id),
   })
 
   return (
-    <Card {...link} className={cn('gap-2 rounded-lg p-3', link.className)}>
+    <Card
+      {...link}
+      className={cn(
+        'gap-2 rounded-lg p-3 group-data-[density=compact]/density:gap-1 group-data-[density=compact]/density:p-2',
+        link.className,
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-sm text-muted-foreground">
             {pr.repo.nameWithOwner} #{pr.number}
-            {pr.author && pr.author !== ctx.viewer ? ` · ${pr.author}` : ''}
           </span>
           <a
             href={pr.url}
             target="_blank"
             rel="noreferrer"
-            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
           >
             {pr.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
           </a>
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground">
-              {relativeTime(pr.updatedAt)}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{absoluteTime(pr.updatedAt)}</TooltipContent>
-        </Tooltip>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="whitespace-nowrap text-sm text-muted-foreground">
+                {relativeTime(pr.updatedAt)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{absoluteTime(pr.updatedAt)}</TooltipContent>
+          </Tooltip>
+          {/* Only for other people's work: your own avatar on your own PR
+              would say nothing. Same gate the old `· author` suffix used. */}
+          {pr.author && pr.author !== ctx.viewer ? <AuthorAvatar login={pr.author} /> : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
