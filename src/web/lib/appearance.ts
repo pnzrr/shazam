@@ -23,6 +23,9 @@ export function useAppearance(): [Appearance, () => void] {
     } catch {
       // storage disabled
     }
+    // Tailwind's dark variant keys off this class; color-scheme keeps the
+    // browser's own chrome (scrollbars, form controls) in step.
+    document.documentElement.classList.toggle('dark', appearance === 'dark')
     document.documentElement.style.colorScheme = appearance
   }, [appearance])
 

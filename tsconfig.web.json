@@ -10,6 +10,10 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/web/*"]
+    },
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo-web.json",
     "types": ["vite/client"]
