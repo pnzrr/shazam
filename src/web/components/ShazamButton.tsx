@@ -1,9 +1,18 @@
-import { ChevronDownIcon, LightningBoltIcon } from '@radix-ui/react-icons'
-import { Button, DropdownMenu, Flex, Tooltip } from '@radix-ui/themes'
+import { ChevronDown, Loader2, Zap } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import type { AgentId, AgentSession, PullRequestItem } from '../../shared/types.js'
 import { api } from '../lib/api.js'
 import { type AgentInfo, primaryAgent } from './agents.js'
+import { BUTTON_SOFT } from './chips.js'
 import { useToast } from './Toaster.js'
 
 export interface ShazamButtonProps {
@@ -41,43 +50,53 @@ export function ShazamButton({ pr, agents, defaultAgent, onLaunched }: ShazamBut
 
   if (!primary) {
     return (
-      <Tooltip content="Neither claude nor codex was found on PATH">
-        <Button size="1" variant="soft" color="gray" disabled>
-          <LightningBoltIcon /> Shazam
-        </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="xs" className={cn('text-sm', BUTTON_SOFT.gray)} disabled>
+            <Zap /> Shazam
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Neither claude nor codex was found on PATH</TooltipContent>
       </Tooltip>
     )
   }
 
   return (
-    <Flex className="split-button">
-      <Tooltip content={`Clone a worktree for this PR and open ${primary.label}`}>
-        <Button
-          size="1"
-          variant="solid"
-          loading={busy}
-          onClick={() => void launch(primary.id)}
-          className="split-main"
-        >
-          <LightningBoltIcon /> Shazam
-        </Button>
+    <div className="flex">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="xs"
+            className="rounded-r-none text-sm"
+            disabled={busy}
+            onClick={() => void launch(primary.id)}
+          >
+            {busy ? <Loader2 className="animate-spin" /> : <Zap />} Shazam
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{`Clone a worktree for this PR and open ${primary.label}`}</TooltipContent>
       </Tooltip>
       {available.length > 1 ? (
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            <Button size="1" variant="solid" disabled={busy} className="split-caret" aria-label="Choose agent">
-              <ChevronDownIcon />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="xs"
+              className="ml-px rounded-l-none px-1"
+              disabled={busy}
+              aria-label="Choose agent"
+            >
+              <ChevronDown />
             </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content size="1">
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
             {available.map((agent) => (
-              <DropdownMenu.Item key={agent.id} onSelect={() => void launch(agent.id)}>
+              <DropdownMenuItem key={agent.id} onSelect={() => void launch(agent.id)}>
                 Open in {agent.label}
-              </DropdownMenu.Item>
+              </DropdownMenuItem>
             ))}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ) : null}
-    </Flex>
+    </div>
   )
 }

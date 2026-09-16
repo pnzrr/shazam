@@ -1,8 +1,17 @@
-import { ChevronDownIcon } from '@radix-ui/react-icons'
-import { Button, DropdownMenu, Flex, Tooltip } from '@radix-ui/themes'
-import type { ComponentProps, ReactNode } from 'react'
+import { ChevronDown, Loader2 } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { BUTTON_SOFT, type ChipColor } from './chips.js'
 
-type ButtonColor = ComponentProps<typeof Button>['color']
+type ButtonColor = Exclude<ChipColor, 'orange'>
 
 export interface SplitActionButtonProps {
   label: string
@@ -35,50 +44,53 @@ export function SplitActionButton({
 }: SplitActionButtonProps) {
   if (blockedReason) {
     return (
-      <Tooltip content={blockedReason}>
-        <Button size="1" variant="soft" color="gray" disabled>
-          {label}
-        </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="xs" className={cn('text-sm', BUTTON_SOFT.gray)} disabled>
+            {label}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{blockedReason}</TooltipContent>
       </Tooltip>
     )
   }
 
   return (
-    <Flex className="split-button">
-      <Tooltip content={primaryTooltip}>
-        <Button
-          size="1"
-          variant="soft"
-          color={color}
-          loading={busy}
-          onClick={onPrimary}
-          className="split-main"
-        >
-          {label}
-          {suffix}
-        </Button>
-      </Tooltip>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
+    <div className="flex">
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Button
-            size="1"
-            variant="soft"
-            color={color}
+            size="xs"
+            className={cn('rounded-r-none text-sm', BUTTON_SOFT[color])}
             disabled={busy}
-            className="split-caret"
+            onClick={onPrimary}
+          >
+            {busy ? <Loader2 className="animate-spin" /> : null}
+            {label}
+            {suffix}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{primaryTooltip}</TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="xs"
+            className={cn('ml-px rounded-l-none px-1', BUTTON_SOFT[color])}
+            disabled={busy}
             aria-label={`More ${label.toLowerCase()} options`}
           >
-            <ChevronDownIcon />
+            <ChevronDown />
           </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content size="1">
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
           {menu.map((item) => (
-            <DropdownMenu.Item key={item.label} onSelect={item.onSelect}>
+            <DropdownMenuItem key={item.label} onSelect={item.onSelect}>
               {item.label}
-            </DropdownMenu.Item>
+            </DropdownMenuItem>
           ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </Flex>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
