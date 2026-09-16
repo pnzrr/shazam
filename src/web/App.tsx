@@ -418,6 +418,10 @@ export function App() {
                   column={column}
                   items={items}
                   hiddenCount={all.length - items.length}
+                  // Only before the first poll: a failed poll shows its own
+                  // callout, and endless skeletons under it would read as
+                  // progress that is not being made.
+                  loading={!data && !dashboard.error}
                   ctx={ctx}
                   collapsed={collapsedColumns.has(column.id)}
                   onToggleCollapse={() => toggleCollapsed(column.id)}

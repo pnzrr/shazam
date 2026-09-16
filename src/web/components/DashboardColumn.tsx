@@ -12,15 +12,36 @@ export interface DashboardColumnProps {
   items: DashboardItem[]
   /** Rows hidden by the filters, reported so the count is not confusing. */
   hiddenCount: number
+  /** True before the first poll lands: skeletons, not "nothing here". */
+  loading: boolean
   ctx: ColumnContext
   collapsed: boolean
   onToggleCollapse: () => void
+}
+
+/*
+ * bg-secondary, not bg-muted: in this palette muted is within a shade of the
+ * card surface, and an invisible skeleton is just the blank column again.
+ */
+function CardSkeleton() {
+  return (
+    <div className="flex animate-pulse flex-col gap-2 rounded-lg border bg-card p-3">
+      <div className="h-4 w-2/5 rounded bg-secondary" />
+      <div className="h-5 w-4/5 rounded bg-secondary" />
+      <div className="flex gap-2">
+        <div className="h-6 w-14 rounded-full bg-secondary" />
+        <div className="h-6 w-9 rounded-full bg-secondary" />
+        <div className="h-6 w-9 rounded-full bg-secondary" />
+      </div>
+    </div>
+  )
 }
 
 export function DashboardColumn({
   column,
   items,
   hiddenCount,
+  loading,
   ctx,
   collapsed,
   onToggleCollapse,
@@ -46,7 +67,7 @@ export function DashboardColumn({
           {column.title}
         </span>
         <Badge className="min-w-6 shrink-0 justify-center bg-accent px-1 text-accent-foreground tabular-nums">
-          {items.length}
+          {loading ? '–' : items.length}
         </Badge>
       </button>
     )
@@ -83,7 +104,7 @@ export function DashboardColumn({
             </Tooltip>
           ) : null}
           <Badge className="min-w-6 justify-center bg-accent px-1 text-accent-foreground tabular-nums">
-            {items.length}
+            {loading ? '–' : items.length}
           </Badge>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -107,7 +128,16 @@ export function DashboardColumn({
             cards instead of running over their right edge. */}
         <div className="flex flex-col gap-2 pr-4 group-data-[density=compact]/density:gap-1">
           {items.length === 0 ? (
-            <span className="px-2 py-4 text-base text-muted-foreground">{column.empty}</span>
+            loading ? (
+              <>
+                <span className="sr-only">Loading {column.title}</span>
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+              </>
+            ) : (
+              <span className="px-2 py-4 text-base text-muted-foreground">{column.empty}</span>
+            )
           ) : (
             items.map((item) => column.renderItem(item, ctx))
           )}

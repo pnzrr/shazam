@@ -164,7 +164,7 @@ export function CommentsChip({ count, threads = 0, repo, number, url }: Comments
 
 export function DraftChip({ isDraft }: { isDraft: boolean }) {
   if (!isDraft) return null
-  return <Chip tooltip="Draft pull request" color="gray" icon={<FileText />} label="draft" />
+  return <Chip tooltip="Draft pull request" color="gray" icon={<FileText />} />
 }
 
 export function DiffStat({
