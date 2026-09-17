@@ -89,6 +89,12 @@ export interface PullRequestItem {
   /** True when the viewer can merge it right now, per GitHub. */
   canMerge: boolean
   /**
+   * Push access to the base repo (WRITE or better). Your own fork PR into
+   * someone else's repo is everything else on this card - open, yours,
+   * mergeable - and still not yours to merge.
+   */
+  viewerCanMerge: boolean
+  /**
    * Merge methods the base repository actually permits, in preference order.
    * Empty when the repo has disabled all of them.
    */

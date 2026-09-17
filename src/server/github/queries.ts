@@ -29,6 +29,7 @@ export const DASHBOARD_QUERY = /* GraphQL */ `
       squashMergeAllowed
       mergeCommitAllowed
       rebaseMergeAllowed
+      viewerPermission
     }
     headRepository {
       ...RepoFields
