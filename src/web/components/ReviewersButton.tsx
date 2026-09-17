@@ -213,6 +213,8 @@ export function ReviewersButton({ pr, onChanged }: ReviewersButtonProps) {
             <Button
               size="xs"
               aria-label="Request reviewers"
+              // The board's `r` shortcut clicks this to open the popover.
+              data-card-action="reviewers"
               className={cn('text-sm', BUTTON_SOFT[pending > 0 ? 'amber' : 'gray'])}
             >
               <UserPlus />

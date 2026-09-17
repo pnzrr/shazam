@@ -143,6 +143,7 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
         }
         busy={busy}
         blockedReason={blockedReason(pr)}
+        cardAction="merge"
         onPrimary={() => void merge(usableMethod)}
         menu={[
           {

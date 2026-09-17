@@ -12,6 +12,20 @@ export interface BoardCursorColumn {
   items: BoardCursorItem[]
 }
 
+/**
+ * Single keys that press a control on the selected card. The handler clicks
+ * the card's own button (found by data-card-action) instead of threading
+ * state up here, so every dialog, popover, and busy state keeps living in the
+ * component that owns it.
+ */
+const ACTION_KEYS: Record<string, string> = {
+  r: 'reviewers',
+  s: 'shazam',
+  m: 'merge',
+  a: 'approve',
+  c: 'close',
+}
+
 const scrollToCard = (id: string) => {
   // The card is already in the DOM - only its ring changes on the next
   // render - so scrolling now is safe. inline too: the board scrolls
@@ -23,8 +37,9 @@ const scrollToCard = (id: string) => {
 
 /**
  * Keyboard cursor over the visible cards: j/k walk every card in reading
- * order, the arrows treat the board as the 2D grid it looks like, and Enter/o
- * open the selection. There is no separate "keyboard selection" state: the
+ * order, the arrows treat the board as the 2D grid it looks like, Enter/o
+ * open the selection, and r/s/m/a/c press the selected card's own action
+ * buttons. There is no separate "keyboard selection" state: the
  * cursor IS lastClickedId, so a click and a keypress move the same marker and
  * the card shows the same ring either way - two selection mechanisms fighting
  * over two highlights would be worse than sharing one.
@@ -44,7 +59,10 @@ export function useBoardKeys(
       const key = event.key
       const isArrow =
         key === 'ArrowDown' || key === 'ArrowUp' || key === 'ArrowLeft' || key === 'ArrowRight'
-      if (key !== 'j' && key !== 'k' && key !== 'o' && key !== 'Enter' && !isArrow) return
+      const action = ACTION_KEYS[key]
+      if (key !== 'j' && key !== 'k' && key !== 'o' && key !== 'Enter' && !isArrow && !action) {
+        return
+      }
       // Same guard the FilterBar uses for '/': leave keys alone while the user
       // is typing - the filter box, a comment box, a rename field, or the
       // terminal (xterm types into a hidden textarea; the class check covers
@@ -54,6 +72,22 @@ export function useBoardKeys(
       // Enter on a focused button or link is activating that control, not
       // asking to open the selected card on top of it.
       if (key === 'Enter' && target?.closest('a, button, [role="menuitem"]')) return
+
+      if (action) {
+        if (!selectedId) return
+        const control = document.querySelector(
+          `[data-item-id="${CSS.escape(selectedId)}"] [data-card-action="${action}"]`,
+        )
+        // A control the card does not have (issue cards carry no Merge, PR
+        // cards no Close) or one that is disabled (blocked, busy) makes the
+        // key a silent no-op - never a throw, never a press somewhere else.
+        if (!(control instanceof HTMLElement)) return
+        if (control instanceof HTMLButtonElement && control.disabled) return
+        event.preventDefault()
+        control.click()
+        return
+      }
+
       if (items.length === 0) return
 
       if (key === 'j' || key === 'k') {
