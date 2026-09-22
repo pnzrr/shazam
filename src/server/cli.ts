@@ -10,6 +10,12 @@ const BOLD = '\x1b[1m'
 const DIM = '\x1b[2m'
 const RESET = '\x1b[0m'
 
+// OSC 0 sets the terminal's window + tab title, so the tab reads "shazam"
+// rather than whatever the shell titled the command it launched us with.
+function setTerminalTitle(title: string): void {
+  if (process.stdout.isTTY) process.stdout.write(`\x1b]0;${title}\x07`)
+}
+
 function openBrowser(url: string): void {
   const command =
     process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open'
@@ -34,6 +40,8 @@ program
   .option('--skip-preflight', 'start even if required tools are missing')
   .action(async (options: { port?: number; poll?: number; open: boolean; skipPreflight?: boolean }) => {
     const config = loadConfig({ port: options.port, pollIntervalMs: options.poll })
+
+    setTerminalTitle('shazam')
 
     console.log(`\n${BOLD}shazam${RESET} ${DIM}checking your toolchain${RESET}`)
     const preflight = await runPreflight(
@@ -67,6 +75,7 @@ program
       if (stopping) return
       stopping = true
       console.log('\nshazam: shutting down')
+      setTerminalTitle('')
       await server.stop()
       process.exit(0)
     }
