@@ -66,7 +66,11 @@ function toMergeState(raw: string | null): MergeState {
  */
 export async function applyMergeStates(prs: PullRequestItem[]): Promise<void> {
   const candidates = prs.filter(
-    (pr) => !pr.isDraft && reviewSatisfied(pr.reviewDecision) && pr.mergeable !== 'conflicting',
+    (pr) =>
+      pr.viewerCanMerge &&
+      !pr.isDraft &&
+      reviewSatisfied(pr.reviewDecision) &&
+      pr.mergeable !== 'conflicting',
   )
   if (candidates.length === 0) return
 

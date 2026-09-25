@@ -89,6 +89,12 @@ export interface PullRequestItem {
   /** True when the viewer can merge it right now, per GitHub. */
   canMerge: boolean
   /**
+   * Push access to the base repo (WRITE or better). Your own fork PR into
+   * someone else's repo is everything else on this card - open, yours,
+   * mergeable - and still not yours to merge.
+   */
+  viewerCanMerge: boolean
+  /**
    * Merge methods the base repository actually permits, in preference order.
    * Empty when the repo has disabled all of them.
    */
@@ -265,9 +271,10 @@ export type AgentId = 'claude' | 'codex'
 /**
  * What a session is being opened to do, which in practice is a choice of
  * opening prompt. `brief` reads the pull request and waits for instruction;
- * `address` goes straight at the changes a reviewer asked for.
+ * `address` goes straight at the changes a reviewer asked for; `conflict`
+ * goes at the merge conflict holding the branch up.
  */
-export type ShazamIntent = 'brief' | 'address'
+export type ShazamIntent = 'brief' | 'address' | 'conflict'
 
 export type SessionStatus = 'preparing' | 'running' | 'exited' | 'failed'
 

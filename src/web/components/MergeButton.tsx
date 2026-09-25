@@ -57,6 +57,9 @@ const MERGE_STATE_REASON: Record<BlockingMergeState, string> = {
  * that the button stays live and warns.
  */
 function blockedReason(pr: PullRequestItem): string | null {
+  if (!pr.viewerCanMerge) {
+    return "You don't have write access to this repository, so the merge is not yours to make"
+  }
   if (pr.isDraft) return 'This pull request is still a draft'
   // `none` passes: on a repo with no required-review rule GitHub merges
   // without an approval, and the button should match GitHub's answer.
@@ -143,6 +146,7 @@ export function MergeButton({ pr, defaultMethod, onDone }: MergeButtonProps) {
         }
         busy={busy}
         blockedReason={blockedReason(pr)}
+        cardAction="merge"
         onPrimary={() => void merge(usableMethod)}
         menu={[
           {
