@@ -7,6 +7,7 @@ import type { IssueItem } from '../../shared/types.js'
 import { absoluteTime, relativeTime } from '../lib/format.js'
 import { AuthorAvatar } from './AuthorAvatar.js'
 import { CloseIssueButton } from './CloseIssueButton.js'
+import { CopyLinkButton } from './CopyLinkButton.js'
 import { CommentsChip } from './StatusIcons.js'
 import { useCardLink } from './useCardLink.js'
 import type { ColumnContext } from './registry.js'
@@ -51,14 +52,17 @@ export function IssueCard({ issue, ctx }: { issue: IssueItem; ctx: ColumnContext
           <span className="text-sm text-muted-foreground">
             {issue.repo.nameWithOwner} #{issue.number}
           </span>
-          <a
-            href={issue.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
-          >
-            {issue.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
-          </a>
+          <div className="min-w-0">
+            <a
+              href={issue.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-base font-medium text-primary group-hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-data-[density=compact]/density:text-sm"
+            >
+              {issue.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
+            </a>
+            <CopyLinkButton url={issue.url} what={`${issue.repo.nameWithOwner} #${issue.number}`} />
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <Tooltip>

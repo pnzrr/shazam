@@ -1,5 +1,10 @@
 import { GraphqlResponseError } from '@octokit/graphql'
-import { type DashboardData, type PullRequestItem, mergeStateBlocks } from '../../shared/types.js'
+import {
+  type ColumnId,
+  type DashboardData,
+  type PullRequestItem,
+  mergeStateBlocks,
+} from '../../shared/types.js'
 import { branchMergeMethods } from './branchRules.js'
 import { getGraphqlClient, resetClient } from './client.js'
 import { applyMergeStates } from './mergeState.js'
@@ -10,16 +15,24 @@ import {
   type RawPr,
   viewerApproved,
 } from './normalize.js'
-import { DASHBOARD_QUERY, SEARCH_QUERIES } from './queries.js'
+import {
+  APPROVED_PR_SEARCH_QUERY,
+  ISSUE_SEARCH_QUERY,
+  PR_SEARCH_QUERY,
+  SEARCH_QUERIES,
+} from './queries.js'
 
-interface RawResponse {
-  viewer: { login: string }
-  myPullRequests: { nodes: (RawPr | null)[] }
-  reviewRequests: { nodes: (RawPr | null)[] }
-  approvedPrs: { nodes: (RawPr | null)[] }
-  myIssues: { nodes: (RawIssue | null)[] }
-  myIssuesAssigned: { nodes: (RawIssue | null)[] }
-  rateLimit: { limit: number; remaining: number; resetAt: string } | null
+interface RateLimit {
+  limit: number
+  remaining: number
+  resetAt: string
+}
+
+/** Every column's request carries the same context alongside its own search. */
+interface RawSearchResponse<T> {
+  viewer: { login: string } | null
+  search: { nodes: (T | null)[] } | null
+  rateLimit: RateLimit | null
 }
 
 /** Search can return empty objects for items the token cannot fully read. */
@@ -66,71 +79,162 @@ export async function applyBranchRules(prs: PullRequestItem[]): Promise<void> {
   )
 }
 
-export async function fetchDashboard(limit: number): Promise<DashboardData> {
+/** Runs one column's search and hands back its rows plus the shared context. */
+async function fetchSearch<T extends { id?: string; state?: string }>(
+  query: string,
+  search: string,
+  limit: number,
+): Promise<{ rows: T[]; viewer: string; rateLimit: RateLimit | null }> {
   const client = await getGraphqlClient()
 
-  let data: RawResponse
+  let data: RawSearchResponse<T>
   try {
-    data = await client<RawResponse>(DASHBOARD_QUERY, {
-      myPullRequests: SEARCH_QUERIES.myPullRequests,
-      reviewRequests: SEARCH_QUERIES.reviewRequests,
-      approvedPrs: SEARCH_QUERIES.approvedPrs,
-      myIssues: SEARCH_QUERIES.myIssues,
-      myIssuesAssigned: SEARCH_QUERIES.myIssuesAssigned,
-      limit,
-    })
+    data = await client<RawSearchResponse<T>>(query, { search, limit })
   } catch (err) {
-    // Partial failures are common: one unreadable repo in a search result set
-    // errors the field but GitHub still returns everything else.
+    // Partial failures are common: one unreadable repo in a result set errors
+    // that node but GitHub still returns everything else.
     if (err instanceof GraphqlResponseError && err.data) {
-      data = err.data as RawResponse
+      data = err.data as RawSearchResponse<T>
     } else {
       throw err
     }
   }
 
-  const viewer = data.viewer?.login ?? ''
+  return {
+    rows: present(data.search?.nodes ?? []).filter(isOpen),
+    viewer: data.viewer?.login ?? '',
+    rateLimit: data.rateLimit,
+  }
+}
+
+/** Human names, for the banner that says which column went stale. */
+const COLUMN_TITLES: Record<ColumnId, string> = {
+  myPullRequests: 'My pull requests',
+  reviewRequests: 'Waiting on my review',
+  approvedPrs: 'Approved, awaiting merge',
+  myIssues: 'Issues I opened',
+  assignedIssues: 'Issues assigned to me',
+}
+
+/**
+ * Fetches every column in parallel, keeping whatever `previous` holds for any
+ * that fails. One column timing out used to mean the whole dashboard froze on
+ * its last good payload; now it means one list is a minute stale and says so.
+ */
+export async function fetchDashboard(
+  limit: number,
+  previous: DashboardData = EMPTY,
+): Promise<DashboardData> {
+  const prSearch = (search: string) => () => fetchSearch<RawPr>(PR_SEARCH_QUERY, search, limit)
+  const issueSearch = (search: string) => () =>
+    fetchSearch<RawIssue>(ISSUE_SEARCH_QUERY, search, limit)
+
+  const [myPullRequests, reviewRequests, approvedPrs, myIssues, assignedIssues] =
+    await Promise.all([
+      settle('myPullRequests', prSearch(SEARCH_QUERIES.myPullRequests)),
+      settle('reviewRequests', prSearch(SEARCH_QUERIES.reviewRequests)),
+      settle('approvedPrs', () =>
+        fetchSearch<RawPr>(APPROVED_PR_SEARCH_QUERY, SEARCH_QUERIES.approvedPrs, limit),
+      ),
+      settle('myIssues', issueSearch(SEARCH_QUERIES.myIssues)),
+      settle('assignedIssues', issueSearch(SEARCH_QUERIES.myIssuesAssigned)),
+    ])
+
+  const results = [myPullRequests, reviewRequests, approvedPrs, myIssues, assignedIssues]
+  const failed = results.filter((r) => r.error !== null)
+  if (failed.length === results.length) {
+    // Nothing got through: this is not one slow column, it is GitHub or the
+    // token, and the caller needs to treat it as a failed poll.
+    throw new Error(failed[0]?.error ?? 'Every column failed')
+  }
+
+  // Any column that answered knows who we are and what quota is left.
+  const context = results.find((r) => r.value !== null)?.value
+  const viewer = results.map((r) => r.value?.viewer).find(Boolean) ?? previous.viewer
+
+  const freshPrs = (
+    result: Settled<RawPr>,
+    fallback: PullRequestItem[],
+    keep: (raw: RawPr) => boolean = () => true,
+  ): { rows: PullRequestItem[]; isFresh: boolean } =>
+    result.value
+      ? { rows: result.value.rows.filter(keep).map(normalizePr).sort(byUpdatedDesc), isFresh: true }
+      : { rows: fallback, isFresh: false }
+
+  const mine = freshPrs(myPullRequests, previous.columns.myPullRequests)
+  const requested = freshPrs(reviewRequests, previous.columns.reviewRequests)
+  // The search only knows the viewer reviewed these; approval is decided here,
+  // off the viewer's own latest opinionated review on each row.
+  const approved = freshPrs(approvedPrs, previous.columns.approvedPrs, (raw) =>
+    viewerApproved(raw, viewer),
+  )
 
   const columns = {
-    myPullRequests: present(data.myPullRequests?.nodes ?? [])
-      .filter(isOpen)
-      .map(normalizePr)
-      .sort(byUpdatedDesc),
-    reviewRequests: present(data.reviewRequests?.nodes ?? [])
-      .filter(isOpen)
-      .map(normalizePr)
-      .sort(byUpdatedDesc),
-    // The search only knows the viewer reviewed these; approval is decided
-    // here, off the viewer's own latest opinionated review on each row.
-    approvedPrs: present(data.approvedPrs?.nodes ?? [])
-      .filter(isOpen)
-      .filter((raw) => viewerApproved(raw, viewer))
-      .map(normalizePr)
-      .sort(byUpdatedDesc),
-    myIssues: present(data.myIssues?.nodes ?? [])
-      .filter(isOpen)
-      .map(normalizeIssue)
-      .sort(byUpdatedDesc),
-    assignedIssues: present(data.myIssuesAssigned?.nodes ?? [])
-      .filter(isOpen)
-      .map(normalizeIssue)
-      .sort(byUpdatedDesc),
+    myPullRequests: mine.rows,
+    reviewRequests: requested.rows,
+    approvedPrs: approved.rows,
+    myIssues: myIssues.value
+      ? myIssues.value.rows.map(normalizeIssue).sort(byUpdatedDesc)
+      : previous.columns.myIssues,
+    assignedIssues: assignedIssues.value
+      ? assignedIssues.value.rows.map(normalizeIssue).sort(byUpdatedDesc)
+      : previous.columns.assignedIssues,
   }
 
   // Order matters: branch rules only narrow the methods of PRs that can still
-  // merge, and that set is not known until the merge states are in. Both
-  // columns with a Merge button get the treatment.
-  const mergeablePrs = [...columns.myPullRequests, ...columns.approvedPrs]
+  // merge, and that set is not known until the merge states are in. Only rows
+  // we just fetched need it - the ones carried over already have theirs.
+  const mergeablePrs = [
+    ...(mine.isFresh ? mine.rows : []),
+    ...(approved.isFresh ? approved.rows : []),
+  ]
   await applyMergeStates(mergeablePrs)
   await applyBranchRules(mergeablePrs)
 
   return {
     viewer,
     fetchedAt: new Date().toISOString(),
-    error: null,
-    rateLimit: data.rateLimit,
+    error:
+      failed.length === 0
+        ? null
+        : `Could not refresh ${failed
+            .map((r) => COLUMN_TITLES[r.id])
+            .join(', ')} - showing the rows from the last good poll. (${failed[0]?.error})`,
+    rateLimit: context?.rateLimit ?? previous.rateLimit,
     columns,
   }
+}
+
+interface Settled<T> {
+  id: ColumnId
+  value: { rows: T[]; viewer: string; rateLimit: RateLimit | null } | null
+  error: string | null
+}
+
+/** Never rejects: a column's failure is data about that column, not the poll. */
+async function settle<T>(
+  id: ColumnId,
+  run: () => Promise<{ rows: T[]; viewer: string; rateLimit: RateLimit | null }>,
+): Promise<Settled<T>> {
+  try {
+    return { id, value: await run(), error: null }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error(`shazam: column ${id} failed: ${message}`)
+    return { id, value: null, error: firstLine(message) }
+  }
+}
+
+/**
+ * GitHub's timeout arrives as an nginx HTML page often enough to matter, and a
+ * banner is no place for a `<html>` document.
+ */
+function firstLine(message: string): string {
+  if (/<html/i.test(message)) {
+    const title = message.match(/<title>([^<]+)<\/title>/i)?.[1]
+    return title?.trim() ?? 'GitHub returned an error page'
+  }
+  return message.split('\n')[0]?.trim() ?? message
 }
 
 const EMPTY: DashboardData = {
@@ -205,7 +309,7 @@ export class DashboardPoller {
 
   private async run(): Promise<DashboardData> {
     try {
-      this.data = await fetchDashboard(this.limit)
+      this.data = await fetchDashboard(this.limit, this.data)
       this.consecutiveFailures = 0
     } catch (err) {
       this.consecutiveFailures += 1
