@@ -89,7 +89,7 @@ async function fetchSearch<T extends { id?: string; state?: string }>(
 
   let data: RawSearchResponse<T>
   try {
-    data = await client<RawSearchResponse<T>>(query, { search, limit })
+    data = await withGatewayRetry(() => client<RawSearchResponse<T>>(query, { search, limit }))
   } catch (err) {
     // Partial failures are common: one unreadable repo in a result set errors
     // that node but GitHub still returns everything else.
@@ -105,6 +105,32 @@ async function fetchSearch<T extends { id?: string; state?: string }>(
     viewer: data.viewer?.login ?? '',
     rateLimit: data.rateLimit,
   }
+}
+
+/** Pauses before each retry of a search GitHub timed out on. */
+const GATEWAY_RETRY_DELAYS_MS = [1_000, 3_000]
+
+/**
+ * Even split per column, a search still lands on GitHub's ~10s ceiling now and
+ * then and comes back as a 502/504 page. Those are transient - the same query
+ * usually answers on the next try - so retry them here rather than turning
+ * every one into a stale-column banner for a whole poll interval.
+ */
+async function withGatewayRetry<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await run()
+    } catch (err) {
+      const delay = GATEWAY_RETRY_DELAYS_MS[attempt]
+      if (delay === undefined || !isGatewayTimeout(err)) throw err
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+}
+
+function isGatewayTimeout(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null)?.status
+  return status === 502 || status === 503 || status === 504
 }
 
 /** Human names, for the banner that says which column went stale. */
