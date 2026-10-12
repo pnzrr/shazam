@@ -13,6 +13,30 @@ export interface CopyLinkButtonProps {
 }
 
 /**
+ * `navigator.clipboard` only exists on secure origins, and the dashboard is
+ * often reached over plain http on a tailnet hostname, where it is undefined.
+ * There the old select-and-execCommand route still works from a click.
+ */
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const area = document.createElement('textarea')
+  area.value = text
+  area.setAttribute('readonly', '')
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.appendChild(area)
+  area.select()
+  try {
+    if (!document.execCommand('copy')) throw new Error('the browser refused to copy')
+  } finally {
+    area.remove()
+  }
+}
+
+/**
  * Sits beside the title's external-link icon so the two readings of a title
  * are one click apart: open it, or take the URL somewhere else. Confirms by
  * swapping to a tick rather than raising a toast, because copying a link is
@@ -36,7 +60,7 @@ export function CopyLinkButton({ url, what }: CopyLinkButtonProps) {
     event.stopPropagation()
 
     try {
-      await navigator.clipboard.writeText(url)
+      await copyText(url)
       setCopied(true)
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => setCopied(false), CONFIRM_MS)
