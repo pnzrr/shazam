@@ -163,6 +163,64 @@ export const APPROVED_PR_SEARCH_QUERY = /* GraphQL */ `
   }
 `
 
+/**
+ * The merged column's own, leaner shape. Over the same hundred rows, PrFields
+ * ran 11s - past GitHub's ceiling, so the column came back as a 502 - and
+ * most of that was fields a merged PR has nothing to say with: mergeability,
+ * review decision, review threads and repository merge settings each cost a
+ * second or two. normalizeMergedPr fills them with neutral values.
+ */
+export const MERGED_PR_SEARCH_QUERY = /* GraphQL */ `
+  ${REPO_FRAGMENT}
+  query MergedPrSearch($search: String!, $limit: Int!) {
+    ${CONTEXT_FIELDS}
+    search(query: $search, type: ISSUE, first: $limit) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          updatedAt
+          createdAt
+          mergedAt
+          mergedBy {
+            login
+          }
+          isDraft
+          author {
+            login
+          }
+          repository {
+            ...RepoFields
+          }
+          headRepository {
+            ...RepoFields
+          }
+          headRefName
+          baseRefName
+          changedFiles
+          additions
+          deletions
+          comments {
+            totalCount
+          }
+          commits(last: 1) {
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const ISSUE_SEARCH_QUERY = /* GraphQL */ `
   ${REPO_FRAGMENT}
   ${ISSUE_FRAGMENT}

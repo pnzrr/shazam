@@ -11,14 +11,17 @@ import { getGraphqlClient, resetClient } from './client.js'
 import { applyMergeStates } from './mergeState.js'
 import {
   normalizeIssue,
+  normalizeMergedPr,
   normalizePr,
   type RawIssue,
+  type RawMergedPr,
   type RawPr,
   viewerApproved,
 } from './normalize.js'
 import {
   APPROVED_PR_SEARCH_QUERY,
   ISSUE_SEARCH_QUERY,
+  MERGED_PR_SEARCH_QUERY,
   PR_SEARCH_QUERY,
   SEARCH_QUERIES,
 } from './queries.js'
@@ -175,8 +178,8 @@ export async function fetchDashboard(
         fetchSearch<RawPr>(APPROVED_PR_SEARCH_QUERY, SEARCH_QUERIES.approvedPrs, limit),
       ),
       settle('recentlyMerged', () =>
-        fetchSearch<RawPr>(
-          PR_SEARCH_QUERY,
+        fetchSearch<RawMergedPr>(
+          MERGED_PR_SEARCH_QUERY,
           SEARCH_QUERIES.recentlyMerged(mergedSince.toISOString().slice(0, 10)),
           limit,
           (node) => node.state === 'MERGED',
@@ -223,20 +226,22 @@ export async function fetchDashboard(
   )
 
   // `involves:` over-fetches; keep what is yours, inside the exact window.
-  const merged = freshPrs(
-    recentlyMerged,
-    previous.columns.recentlyMerged,
-    (raw) =>
-      (raw.author?.login === viewer || raw.mergedBy?.login === viewer) &&
-      raw.mergedAt !== null &&
-      new Date(raw.mergedAt) >= mergedSince,
-  )
+  const merged = recentlyMerged.value
+    ? recentlyMerged.value.rows
+        .filter(
+          (raw) =>
+            (raw.author?.login === viewer || raw.mergedBy?.login === viewer) &&
+            raw.mergedAt !== null &&
+            new Date(raw.mergedAt) >= mergedSince,
+        )
+        .map(normalizeMergedPr)
+    : previous.columns.recentlyMerged
 
   const columns = {
     myPullRequests: mine.rows,
     reviewRequests: requested.rows,
     approvedPrs: approved.rows,
-    recentlyMerged: [...merged.rows].sort(byMergedDesc),
+    recentlyMerged: [...merged].sort(byMergedDesc),
     myIssues: myIssues.value
       ? myIssues.value.rows.map(normalizeIssue).sort(byUpdatedDesc)
       : previous.columns.myIssues,

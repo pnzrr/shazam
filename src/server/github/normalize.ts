@@ -195,6 +195,35 @@ export function normalizePr(raw: RawPr): PullRequestItem {
   }
 }
 
+/** What MERGED_PR_SEARCH_QUERY leaves out of PrFields. */
+type MergedOmitted = 'mergeable' | 'reviewDecision' | 'reviewRequests' | 'reviewThreads'
+
+export interface RawMergedPr extends Omit<RawPr, MergedOmitted | 'repository'> {
+  repository: RawRepo
+}
+
+/**
+ * The lean merged shape, filled out with values that render as "nothing to
+ * say": no decision, no threads, no permission - so canMerge is false and the
+ * card shows no merge controls even before it checks mergedAt.
+ */
+export function normalizeMergedPr(raw: RawMergedPr): PullRequestItem {
+  return normalizePr({
+    ...raw,
+    repository: {
+      ...raw.repository,
+      squashMergeAllowed: false,
+      mergeCommitAllowed: false,
+      rebaseMergeAllowed: false,
+      viewerPermission: null,
+    },
+    mergeable: 'UNKNOWN',
+    reviewDecision: null,
+    reviewRequests: { totalCount: 0 },
+    reviewThreads: { nodes: [] },
+  })
+}
+
 export function normalizeIssue(raw: RawIssue): IssueItem {
   return {
     kind: 'issue',
