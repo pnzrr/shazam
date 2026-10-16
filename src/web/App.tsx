@@ -295,7 +295,14 @@ export function App() {
     const map = new Map<ColumnId, DashboardItem[]>()
     if (!data) return map
     for (const column of orderedColumns) {
-      const visible = column.select(data).filter((item) => !dismissed.has(item.id))
+      // A merged row is exactly where a just-merged PR belongs, so the
+      // dismissal that hides it from the open columns must not hide it here.
+      const visible = column
+        .select(data)
+        .filter(
+          (item) =>
+            !dismissed.has(item.id) || (item.kind === 'pull_request' && item.mergedAt !== null),
+        )
       const byOwner =
         owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
       map.set(

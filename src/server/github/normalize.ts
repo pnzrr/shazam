@@ -41,6 +41,8 @@ export interface RawPr {
   state: 'OPEN' | 'CLOSED' | 'MERGED'
   updatedAt: string
   createdAt: string
+  mergedAt: string | null
+  mergedBy: { login: string } | null
   isDraft: boolean
   author: { login: string } | null
   repository: RawBaseRepo
@@ -177,6 +179,8 @@ export function normalizePr(raw: RawPr): PullRequestItem {
     changedFiles: raw.changedFiles,
     additions: raw.additions,
     deletions: raw.deletions,
+    mergedAt: raw.mergedAt ?? null,
+    mergedBy: raw.mergedBy?.login ?? null,
     // Push access, reviews satisfied, no conflicts, not a draft. A red check is
     // deliberately not disqualifying on its own: unless a branch rule requires
     // that check, GitHub merges it. applyMergeStates refines this with

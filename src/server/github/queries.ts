@@ -30,6 +30,10 @@ const PR_FRAGMENT = /* GraphQL */ `
     state
     updatedAt
     createdAt
+    mergedAt
+    mergedBy {
+      login
+    }
     isDraft
     author {
       login
@@ -189,6 +193,15 @@ export const SEARCH_QUERIES = {
    */
   approvedPrs:
     'is:open is:pr reviewed-by:@me -author:@me -review-requested:@me archived:false sort:updated-desc',
+  /**
+   * Search has no `merged-by:` qualifier, so `involves:@me` casts the net -
+   * author, reviewer, commenter, assignee - and the poller keeps the rows you
+   * authored or merged yourself. A PR you merged without ever touching it
+   * otherwise (a bot's, say) falls outside the net. The date is day-granular;
+   * the poller trims to the exact window.
+   */
+  recentlyMerged: (since: string) =>
+    `is:pr is:merged involves:@me merged:>=${since} archived:false sort:updated-desc`,
   myIssues: 'is:open is:issue author:@me archived:false sort:updated-desc',
   /**
    * `-author:@me` keeps the two issue columns disjoint, the same way
