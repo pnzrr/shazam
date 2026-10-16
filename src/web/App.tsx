@@ -1,4 +1,15 @@
-import { Bell, BellOff, Columns3, Moon, RefreshCw, Rows3, Rows4, Sun, TriangleAlert } from 'lucide-react'
+import {
+  Bell,
+  BellOff,
+  Columns3,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Rows3,
+  Rows4,
+  Sun,
+  TriangleAlert,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -89,7 +100,7 @@ function initialQuery(): string {
 }
 
 export function App() {
-  const [appearance, toggleAppearance] = useAppearance()
+  const { appearance, preference: themePreference, cycle: cycleTheme } = useAppearance()
   const [density, toggleDensity] = useDensity()
   const health = useHealth()
   const dashboard = useDashboard(health?.pollIntervalMs ?? 60_000)
@@ -451,13 +462,25 @@ export function App() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground"
-                  onClick={toggleAppearance}
+                  onClick={cycleTheme}
                 >
-                  {appearance === 'dark' ? <Sun /> : <Moon />}
+                  {/* Three states, so unlike density this shows where you
+                      are: a destination icon cannot say "following the OS". */}
+                  {themePreference === 'system' ? (
+                    <Monitor />
+                  ) : themePreference === 'dark' ? (
+                    <Moon />
+                  ) : (
+                    <Sun />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {appearance === 'dark' ? 'Switch to light' : 'Switch to dark'}
+                {themePreference === 'system'
+                  ? `Theme follows the OS (${appearance} now) - click for light`
+                  : themePreference === 'light'
+                    ? 'Theme: light - click for dark'
+                    : 'Theme: dark - click to follow the OS'}
               </TooltipContent>
             </Tooltip>
           </div>
