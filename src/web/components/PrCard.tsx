@@ -9,6 +9,7 @@ import { ApproveButton } from './ApproveButton.js'
 import { AuthorAvatar } from './AuthorAvatar.js'
 import { CopyLinkButton } from './CopyLinkButton.js'
 import { MergeButton } from './MergeButton.js'
+import { PingReviewersButton } from './PingReviewersButton.js'
 import { ReviewersButton } from './ReviewersButton.js'
 import { SessionBadge } from './SessionBadge.js'
 import { ShazamButton } from './ShazamButton.js'
@@ -126,6 +127,11 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
           not part of the chip cluster. */}
       {!merged ? (
         <div className="mt-1.5 flex items-center justify-end gap-2">
+          {/* Nudging reviewers is the author's move; on someone else's PR in
+              the approved column it would be speaking for them. */}
+          {action === 'merge' && pr.author === ctx.viewer ? (
+            <PingReviewersButton pr={pr} onDone={ctx.onChanged} />
+          ) : null}
           {action === 'merge' ? <ReviewersButton pr={pr} onChanged={ctx.onChanged} /> : null}
           <ShazamButton
             pr={pr}
