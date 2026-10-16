@@ -5,11 +5,14 @@ import { myIssues } from './myIssues.js'
 import { myPullRequests } from './myPullRequests.js'
 import { reviewRequests } from './reviewRequests.js'
 
-/** Order here is the order on screen. */
+/**
+ * The default order on screen. Each browser can drag its own (see
+ * useColumnOrder), which only ever permutes this list.
+ */
 export const COLUMNS: ColumnDef[] = [
   myPullRequests,
   reviewRequests,
   approvedPrs,
-  myIssues,
   assignedIssues,
+  myIssues,
 ]
