@@ -2,6 +2,7 @@ import { GraphqlResponseError } from '@octokit/graphql'
 import {
   type ColumnId,
   type DashboardData,
+  MERGED_LOOKBACK_DAYS,
   type PullRequestItem,
   mergeStateBlocks,
 } from '../../shared/types.js'
@@ -10,14 +11,17 @@ import { getGraphqlClient, resetClient } from './client.js'
 import { applyMergeStates } from './mergeState.js'
 import {
   normalizeIssue,
+  normalizeMergedPr,
   normalizePr,
   type RawIssue,
+  type RawMergedPr,
   type RawPr,
   viewerApproved,
 } from './normalize.js'
 import {
   APPROVED_PR_SEARCH_QUERY,
   ISSUE_SEARCH_QUERY,
+  MERGED_PR_SEARCH_QUERY,
   PR_SEARCH_QUERY,
   SEARCH_QUERIES,
 } from './queries.js'
@@ -50,6 +54,12 @@ export const isOpen = <T extends { state?: string }>(node: T): boolean =>
 
 const byUpdatedDesc = <T extends { updatedAt: string }>(a: T, b: T) =>
   b.updatedAt.localeCompare(a.updatedAt)
+
+/** Search cannot sort by merge time, so the merged column sorts itself. */
+const byMergedDesc = (a: PullRequestItem, b: PullRequestItem) =>
+  (b.mergedAt ?? '').localeCompare(a.mergedAt ?? '')
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 
 /**
@@ -84,12 +94,14 @@ async function fetchSearch<T extends { id?: string; state?: string }>(
   query: string,
   search: string,
   limit: number,
+  /** The merged column wants exactly the rows `isOpen` exists to drop. */
+  keep: (node: T) => boolean = isOpen,
 ): Promise<{ rows: T[]; viewer: string; rateLimit: RateLimit | null }> {
   const client = await getGraphqlClient()
 
   let data: RawSearchResponse<T>
   try {
-    data = await client<RawSearchResponse<T>>(query, { search, limit })
+    data = await withGatewayRetry(() => client<RawSearchResponse<T>>(query, { search, limit }))
   } catch (err) {
     // Partial failures are common: one unreadable repo in a result set errors
     // that node but GitHub still returns everything else.
@@ -101,10 +113,36 @@ async function fetchSearch<T extends { id?: string; state?: string }>(
   }
 
   return {
-    rows: present(data.search?.nodes ?? []).filter(isOpen),
+    rows: present(data.search?.nodes ?? []).filter(keep),
     viewer: data.viewer?.login ?? '',
     rateLimit: data.rateLimit,
   }
+}
+
+/** Pauses before each retry of a search GitHub timed out on. */
+const GATEWAY_RETRY_DELAYS_MS = [1_000, 3_000]
+
+/**
+ * Even split per column, a search still lands on GitHub's ~10s ceiling now and
+ * then and comes back as a 502/504 page. Those are transient - the same query
+ * usually answers on the next try - so retry them here rather than turning
+ * every one into a stale-column banner for a whole poll interval.
+ */
+async function withGatewayRetry<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await run()
+    } catch (err) {
+      const delay = GATEWAY_RETRY_DELAYS_MS[attempt]
+      if (delay === undefined || !isGatewayTimeout(err)) throw err
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+}
+
+function isGatewayTimeout(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null)?.status
+  return status === 502 || status === 503 || status === 504
 }
 
 /** Human names, for the banner that says which column went stale. */
@@ -112,6 +150,7 @@ const COLUMN_TITLES: Record<ColumnId, string> = {
   myPullRequests: 'My pull requests',
   reviewRequests: 'Waiting on my review',
   approvedPrs: 'Approved, awaiting merge',
+  recentlyMerged: 'Merged recently',
   myIssues: 'Issues I opened',
   assignedIssues: 'Issues assigned to me',
 }
@@ -129,18 +168,35 @@ export async function fetchDashboard(
   const issueSearch = (search: string) => () =>
     fetchSearch<RawIssue>(ISSUE_SEARCH_QUERY, search, limit)
 
-  const [myPullRequests, reviewRequests, approvedPrs, myIssues, assignedIssues] =
+  const mergedSince = new Date(Date.now() - MERGED_LOOKBACK_DAYS * DAY_MS)
+
+  const [myPullRequests, reviewRequests, approvedPrs, recentlyMerged, myIssues, assignedIssues] =
     await Promise.all([
       settle('myPullRequests', prSearch(SEARCH_QUERIES.myPullRequests)),
       settle('reviewRequests', prSearch(SEARCH_QUERIES.reviewRequests)),
       settle('approvedPrs', () =>
         fetchSearch<RawPr>(APPROVED_PR_SEARCH_QUERY, SEARCH_QUERIES.approvedPrs, limit),
       ),
+      settle('recentlyMerged', () =>
+        fetchSearch<RawMergedPr>(
+          MERGED_PR_SEARCH_QUERY,
+          SEARCH_QUERIES.recentlyMerged(mergedSince.toISOString().slice(0, 10)),
+          limit,
+          (node) => node.state === 'MERGED',
+        ),
+      ),
       settle('myIssues', issueSearch(SEARCH_QUERIES.myIssues)),
       settle('assignedIssues', issueSearch(SEARCH_QUERIES.myIssuesAssigned)),
     ])
 
-  const results = [myPullRequests, reviewRequests, approvedPrs, myIssues, assignedIssues]
+  const results = [
+    myPullRequests,
+    reviewRequests,
+    approvedPrs,
+    recentlyMerged,
+    myIssues,
+    assignedIssues,
+  ]
   const failed = results.filter((r) => r.error !== null)
   if (failed.length === results.length) {
     // Nothing got through: this is not one slow column, it is GitHub or the
@@ -169,10 +225,23 @@ export async function fetchDashboard(
     viewerApproved(raw, viewer),
   )
 
+  // `involves:` over-fetches; keep what is yours, inside the exact window.
+  const merged = recentlyMerged.value
+    ? recentlyMerged.value.rows
+        .filter(
+          (raw) =>
+            (raw.author?.login === viewer || raw.mergedBy?.login === viewer) &&
+            raw.mergedAt !== null &&
+            new Date(raw.mergedAt) >= mergedSince,
+        )
+        .map(normalizeMergedPr)
+    : previous.columns.recentlyMerged
+
   const columns = {
     myPullRequests: mine.rows,
     reviewRequests: requested.rows,
     approvedPrs: approved.rows,
+    recentlyMerged: [...merged].sort(byMergedDesc),
     myIssues: myIssues.value
       ? myIssues.value.rows.map(normalizeIssue).sort(byUpdatedDesc)
       : previous.columns.myIssues,
@@ -246,6 +315,7 @@ const EMPTY: DashboardData = {
     myPullRequests: [],
     reviewRequests: [],
     approvedPrs: [],
+    recentlyMerged: [],
     myIssues: [],
     assignedIssues: [],
   },

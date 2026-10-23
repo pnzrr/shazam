@@ -285,11 +285,13 @@ Optional, at `~/.shazam/config.json`:
 {
   "pollIntervalMs": 60000,
   "port": 4270,
+  "host": "127.0.0.1",
   "defaultAgent": "claude",
   "defaultMergeMethod": "squash",
   "perColumnLimit": 100,
   "trustWorktrees": true,
   "terminalFontSize": 20,
+  "allowedOrigins": [],
   "shazamPrompt": "You are working on pull request {url}. ...",
   "shazamChangesPrompt": "You are working on pull request {url}, where a reviewer has requested changes. ...",
   "shazamConflictPrompt": "You are working on pull request {url}, which has a merge conflict with its base branch. ...",
@@ -318,7 +320,9 @@ to whichever one is.
   header.
 - **Access control.** The dashboard can spawn shells, so `/api` and `/ws` require
   a token (`~/.shazam/token`, mode 0600) and a loopback `Origin`. The server
-  binds `127.0.0.1` only.
+  binds `127.0.0.1` by default. To reach it from another machine, set `host`
+  (e.g. `"0.0.0.0"`) and list the exact origin you browse from in
+  `allowedOrigins`, e.g. `["http://myhost:4270"]`; the token is still required.
 
 ## Swapping components out
 
@@ -347,7 +351,10 @@ a preflight entry.
 - Each column is capped at `perColumnLimit` (100, GitHub's own ceiling for a
   search page); there is no pagination beyond that.
 - Merge does not delete the branch, wait for a merge queue, or offer auto-merge.
-- Sessions live in the server process; restarting `shazam` ends them.
+- Sessions live in the server process; restarting `shazam` ends them. A way
+  out is sketched in
+  [docs/proposals/detached-sessions-and-state.md](docs/proposals/detached-sessions-and-state.md),
+  along with persistent state and auto-started sessions.
 
 ## Assumptions
 

@@ -10,6 +10,8 @@ const configSchema = z.object({
   /** Milliseconds between GitHub polls. Floor of 15s to stay friendly to the API. */
   pollIntervalMs: z.number().int().min(15_000).default(60_000),
   port: z.number().int().min(1).max(65535).default(4270),
+  /** Address to listen on. Use "0.0.0.0" to reach the dashboard from other machines. */
+  host: z.string().default('127.0.0.1'),
   defaultAgent: z.enum(['claude', 'codex']).default('claude'),
   defaultMergeMethod: z.enum(['squash', 'merge', 'rebase']).default('squash'),
   /** Max rows fetched per column. 100 is GitHub's own page ceiling for search. */
@@ -22,6 +24,12 @@ const configSchema = z.object({
   trustWorktrees: z.boolean().default(true),
   /** Font size, in px, for the embedded agent terminal. */
   terminalFontSize: z.number().int().min(8).max(48).default(20),
+  /**
+   * Extra browser origins allowed to call /api and /ws, for reaching the
+   * dashboard from another machine. Exact origins only, e.g.
+   * "http://myhost:4270". The token is still required.
+   */
+  allowedOrigins: z.array(z.string().url()).default([]),
   /**
    * `{url}`, `{path}`, `{branch}`, `{repo}` and `{number}` are substituted
    * before the prompt is handed to the agent.
