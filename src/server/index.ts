@@ -42,7 +42,7 @@ export async function startServer(
     const url = request.url
     if (!url.startsWith('/api') && !url.startsWith('/ws')) return
 
-    if (!originAllowed(request.headers.origin, config.port)) {
+    if (!originAllowed(request.headers.origin, config.port, config.allowedOrigins)) {
       return reply.code(403).send({ ok: false, message: 'Forbidden origin' })
     }
 
@@ -75,13 +75,13 @@ export async function startServer(
   }
 
   poller.start()
-  await app.listen({ port: config.port, host: '127.0.0.1' })
+  await app.listen({ port: config.port, host: config.host })
 
   return {
     app,
     poller,
     sessions,
-    url: `http://127.0.0.1:${config.port}`,
+    url: `http://${config.host === '0.0.0.0' ? '127.0.0.1' : config.host}:${config.port}`,
     stop: async () => {
       poller.stop()
       sessions.closeAll()

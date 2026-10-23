@@ -36,12 +36,18 @@ export function tokenMatches(expected: string, given: unknown): boolean {
 
 /**
  * A page on another origin cannot read our responses, but it can still drive
- * side effects if it guesses the token, so we pin Origin to loopback too.
+ * side effects if it guesses the token, so we pin Origin to loopback too, plus
+ * any origins the config explicitly allows (e.g. a `tailscale serve` URL).
  */
-export function originAllowed(origin: string | undefined, port: number): boolean {
+export function originAllowed(
+  origin: string | undefined,
+  port: number,
+  extraOrigins: readonly string[] = [],
+): boolean {
   if (!origin) return true // non-browser clients (curl, tests) send none
   try {
     const url = new URL(origin)
+    if (extraOrigins.some((allowed) => new URL(allowed).origin === url.origin)) return true
     const localHosts = ['127.0.0.1', 'localhost', '[::1]', '::1']
     if (!localHosts.includes(url.hostname)) return false
     // Vite's dev server proxies from its own port during development.
