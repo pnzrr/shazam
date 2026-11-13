@@ -80,3 +80,9 @@ test('owner chips cycle include, exclude, off', async ({ board }) => {
   await expect(chip).toHaveAttribute('aria-pressed', 'false')
   await expect(cards).toHaveCount(total)
 })
+
+test('PR cards show head → base', async ({ board }) => {
+  const chip = board.getByTestId('branch-chip').first()
+  await expect(chip).toHaveText(/feature-\d+\s*→\s*main/)
+  await board.locator('[data-item-id]').first().screenshot({ path: 'test-results/branch-chip.png' })
+})

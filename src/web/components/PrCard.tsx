@@ -7,6 +7,7 @@ import { absoluteTime, relativeTime } from '../lib/format.js'
 import { FixChangesButton, FixConflictButton } from './AgentFixButton.js'
 import { ApproveButton } from './ApproveButton.js'
 import { AuthorAvatar } from './AuthorAvatar.js'
+import { BranchChip } from './BranchChip.js'
 import { CopyLinkButton } from './CopyLinkButton.js'
 import { MergeButton } from './MergeButton.js'
 import { PingReviewersButton } from './PingReviewersButton.js'
@@ -55,9 +56,12 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-sm text-muted-foreground">
-            {pr.repo.nameWithOwner} #{pr.number}
-          </span>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-sm text-muted-foreground">
+              {pr.repo.nameWithOwner} #{pr.number}
+            </span>
+            <BranchChip pr={pr} />
+          </div>
           <div className="min-w-0">
             <a
               href={pr.url}
