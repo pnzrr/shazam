@@ -46,6 +46,7 @@ import { useAppearance } from './lib/appearance.js'
 import { useDensity } from './lib/density.js'
 import { matchesFilter, parseFilter } from './lib/filter.js'
 import { relativeTime } from './lib/format.js'
+import { cycleOwner, ownerPasses } from './lib/owners.js'
 
 const FILTER_KEY = 'shazam.owners'
 const COLLAPSED_KEY = 'shazam.collapsed'
@@ -191,10 +192,7 @@ export function App() {
 
   const toggleOwner = useCallback(
     (owner: string) => {
-      const next = new Set(owners)
-      if (next.has(owner)) next.delete(owner)
-      else next.add(owner)
-      persistOwners(next)
+      persistOwners(cycleOwner(owners, owner))
     },
     [owners, persistOwners],
   )
@@ -329,8 +327,7 @@ export function App() {
           (item) =>
             !dismissed.has(item.id) || (item.kind === 'pull_request' && item.mergedAt !== null),
         )
-      const byOwner =
-        owners.size === 0 ? visible : visible.filter((item) => owners.has(ownerOf(item)))
+      const byOwner = visible.filter((item) => ownerPasses(owners, ownerOf(item)))
       map.set(
         column.id,
         byOwner.filter((item) => matchesFilter(item, parsedQuery)),
