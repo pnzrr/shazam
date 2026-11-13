@@ -56,12 +56,9 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-sm text-muted-foreground">
-              {pr.repo.nameWithOwner} #{pr.number}
-            </span>
-            <BranchChip pr={pr} />
-          </div>
+          <span className="text-sm text-muted-foreground">
+            {pr.repo.nameWithOwner} #{pr.number}
+          </span>
           <div className="min-w-0">
             <a
               href={pr.url}
@@ -72,6 +69,11 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
               {pr.title} <ExternalLink className="inline size-3.5 align-[-2px] opacity-50" />
             </a>
             <CopyLinkButton url={pr.url} what={`${pr.repo.nameWithOwner} #${pr.number}`} />
+          </div>
+          {/* Under the title, not beside the repo: the header line stays one
+              line, and the branch reads as a detail of this PR. */}
+          <div className="flex min-w-0">
+            <BranchChip pr={pr} />
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
