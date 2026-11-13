@@ -80,3 +80,24 @@ test('owner chips cycle include, exclude, off', async ({ board }) => {
   await expect(chip).toHaveAttribute('aria-pressed', 'false')
   await expect(cards).toHaveCount(total)
 })
+
+test('PR cards show head → base', async ({ board }) => {
+  const chip = board.getByTestId('branch-chip').first()
+  await expect(chip).toHaveText(/feature-\d+\s*→\s*main/)
+  await board.locator('[data-item-id]').first().screenshot({ path: 'test-results/branch-chip.png' })
+})
+
+test('card helpers sit left, merge/approve holds the right edge', async ({ board }) => {
+  await board.getByRole('heading', { name: 'Waiting on my review' }).waitFor()
+  for (const name of ['My pull requests', 'Waiting on my review']) {
+    const card = board.locator('[data-item-id]', {
+      has: board.getByRole('button', { name: name === 'My pull requests' ? /^Merge/ : /^Approve/ }),
+    }).first()
+    const cardBox = (await card.boundingBox())!
+    const shazam = (await card.getByRole('button', { name: /Shazam/ }).first().boundingBox())!
+    const finish = (await card.getByRole('button', { name: name === 'My pull requests' ? /^Merge/ : /^Approve/ }).first().boundingBox())!
+    expect(shazam.x - cardBox.x).toBeLessThan(cardBox.width / 2)
+    expect(cardBox.x + cardBox.width - (finish.x + finish.width)).toBeLessThan(60)
+  }
+  await board.screenshot({ path: 'test-results/actions-left.png' })
+})

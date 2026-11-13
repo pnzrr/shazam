@@ -7,6 +7,7 @@ import { absoluteTime, relativeTime } from '../lib/format.js'
 import { FixChangesButton, FixConflictButton } from './AgentFixButton.js'
 import { ApproveButton } from './ApproveButton.js'
 import { AuthorAvatar } from './AuthorAvatar.js'
+import { BranchChip } from './BranchChip.js'
 import { CopyLinkButton } from './CopyLinkButton.js'
 import { MergeButton } from './MergeButton.js'
 import { PingReviewersButton } from './PingReviewersButton.js'
@@ -55,9 +56,12 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
       <div className="flex items-start justify-between gap-2">
         {/* Long titles must wrap rather than push the timestamp off the card. */}
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-sm text-muted-foreground">
-            {pr.repo.nameWithOwner} #{pr.number}
-          </span>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-sm text-muted-foreground">
+              {pr.repo.nameWithOwner} #{pr.number}
+            </span>
+            <BranchChip pr={pr} />
+          </div>
           <div className="min-w-0">
             <a
               href={pr.url}
@@ -124,9 +128,11 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
       </div>
 
       {/* mt-1.5 on top of the card's gap: the buttons read as their own row,
-          not part of the chip cluster. */}
+          not part of the chip cluster. Helpers sit at the left; the one
+          button that finishes the PR (merge or approve) holds the right edge,
+          so it is always in the same place and never mistaken for a helper. */}
       {!merged ? (
-        <div className="mt-1.5 flex items-center justify-end gap-2">
+        <div className="mt-1.5 flex items-center gap-2">
           {/* Nudging reviewers is the author's move; on someone else's PR in
               the approved column it would be speaking for them. */}
           {action === 'merge' && pr.author === ctx.viewer ? (
@@ -139,10 +145,15 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
             defaultAgent={ctx.defaultAgent}
             onLaunched={onLaunched}
           />
-          {action === 'merge' ? (
-            <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />
+          {action !== 'none' ? (
+            <div className="ml-auto">
+              {action === 'merge' ? (
+                <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />
+              ) : (
+                <ApproveButton pr={pr} onDone={() => ctx.onActioned(pr.id)} />
+              )}
+            </div>
           ) : null}
-          {action === 'approve' ? <ApproveButton pr={pr} onDone={() => ctx.onActioned(pr.id)} /> : null}
         </div>
       ) : null}
     </Card>
