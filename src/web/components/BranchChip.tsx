@@ -22,7 +22,7 @@ export function BranchChip({ pr }: { pr: Pick<PullRequestItem, 'repo' | 'headRep
         <Badge
           variant="outline"
           data-testid="branch-chip"
-          className="max-w-full min-w-0 shrink gap-1 px-1.5 font-mono text-[11px] font-normal text-muted-foreground"
+          className="max-w-full min-w-0 shrink gap-1 px-1.5 font-mono [&>svg]:shrink-0 text-[11px] font-normal text-muted-foreground"
         >
           <GitBranch />
           <span className="min-w-0 truncate">{head}</span>
