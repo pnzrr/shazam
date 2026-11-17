@@ -101,3 +101,17 @@ test('card helpers sit left, merge/approve holds the right edge', async ({ board
   }
   await board.screenshot({ path: 'test-results/actions-left.png' })
 })
+
+test('a review request you could merge offers approve and merge', async ({ board }) => {
+  await board.getByRole('heading', { name: 'Waiting on my review' }).waitFor()
+  const bump = board.locator('[data-item-id]', { hasText: 'Bump cloudflared' })
+  const approve = (await bump.getByRole('button', { name: /^Approve/ }).first().boundingBox())!
+  const merge = (await bump.getByRole('button', { name: /^Merge/ }).first().boundingBox())!
+  // Merge keeps the right edge; approve sits just before it.
+  expect(merge.x).toBeGreaterThan(approve.x)
+  // One that still needs your review offers approve alone.
+  const needsReview = board.locator('[data-item-id]', { hasText: 'Idempotency keys' })
+  await expect(needsReview.getByRole('button', { name: /^Approve/ }).first()).toBeVisible()
+  await expect(needsReview.getByRole('button', { name: /^Merge/ })).toHaveCount(0)
+  await bump.screenshot({ path: 'test-results/approve-and-merge.png' })
+})
