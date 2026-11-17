@@ -148,12 +148,17 @@ export function PrCard({ pr, ctx, action }: PrCardProps) {
             onLaunched={onLaunched}
           />
           {action !== 'none' ? (
-            <div className="ml-auto">
-              {action === 'merge' ? (
-                <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />
-              ) : (
+            <div className="ml-auto flex items-center gap-2">
+              {/* A review request you could also just merge - no required
+                  review standing in the way, push access, no conflicts, the
+                  usual dependabot bump - offers both. Merge keeps the right
+                  edge, the same place it holds in the merge columns. */}
+              {action === 'approve' ? (
                 <ApproveButton pr={pr} onDone={() => ctx.onActioned(pr.id)} />
-              )}
+              ) : null}
+              {action === 'merge' || pr.canMerge ? (
+                <MergeButton pr={pr} defaultMethod={ctx.defaultMergeMethod} onDone={() => ctx.onActioned(pr.id)} />
+              ) : null}
             </div>
           ) : null}
         </div>
