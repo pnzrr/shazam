@@ -123,7 +123,7 @@ function approvable(pr: PullRequestItem, viewer: string): boolean {
     pr.author !== viewer &&
     checksClear(pr) &&
     pr.reviewDecision !== 'changes_requested' &&
-    !pr.reviewers.some((r) => r.login === viewer && r.state === 'approved')
+    !(pr.reviewers ?? []).some((r) => r.login === viewer && r.state === 'approved')
   )
 }
 
