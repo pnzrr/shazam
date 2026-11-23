@@ -57,6 +57,11 @@ export interface RepoRef {
   url: string
 }
 
+export interface Approval {
+  login: string
+  submittedAt: string | null
+}
+
 export interface PullRequestItem {
   kind: 'pull_request'
   id: string
@@ -74,6 +79,8 @@ export interface PullRequestItem {
   baseRef: string
   checks: CheckState
   reviewDecision: ReviewDecision
+  /** Reviewers whose standing verdict is an approval, earliest first. */
+  approvals: Approval[]
   mergeable: MergeableState
   /** Whether GitHub would take the merge, and if not, why. */
   mergeState: MergeState

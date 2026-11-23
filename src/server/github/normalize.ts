@@ -1,4 +1,5 @@
 import {
+  type Approval,
   type CheckState,
   type IssueItem,
   type MergeMethod,
@@ -58,9 +59,9 @@ export interface RawPr {
   reviewRequests: { totalCount: number }
   reviewThreads: { nodes: ({ isResolved: boolean } | null)[] }
   commits: { nodes: ({ commit: { statusCheckRollup: { state: string } | null } } | null)[] }
-  /** Fetched only by the approvedPrs search; the other aliases skip it. */
+  /** Absent on the merged column's lean query. */
   latestOpinionatedReviews?: {
-    nodes: ({ state: string; author: { login: string } | null } | null)[]
+    nodes: ({ state: string; submittedAt?: string | null; author: { login: string } | null } | null)[]
   }
 }
 
@@ -74,6 +75,16 @@ export function viewerApproved(raw: RawPr, viewer: string): boolean {
   return (raw.latestOpinionatedReviews?.nodes ?? []).some(
     (review) => review?.state === 'APPROVED' && review.author?.login === viewer,
   )
+}
+
+/** Each reviewer whose standing verdict is an approval, earliest first. */
+function approvals(raw: RawPr): Approval[] {
+  const out: Approval[] = []
+  for (const review of raw.latestOpinionatedReviews?.nodes ?? []) {
+    if (review?.state !== 'APPROVED') continue
+    out.push({ login: review.author?.login ?? 'ghost', submittedAt: review.submittedAt ?? null })
+  }
+  return out.sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''))
 }
 
 export interface RawIssue {
@@ -169,6 +180,7 @@ export function normalizePr(raw: RawPr): PullRequestItem {
     baseRef: raw.baseRefName,
     checks,
     reviewDecision: decision,
+    approvals: approvals(raw),
     mergeable: merge,
     // Too expensive to ask for in the dashboard query; applyMergeStates fills
     // it in afterwards for the few PRs whose Merge button is otherwise live.
