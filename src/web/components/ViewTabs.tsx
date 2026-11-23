@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ALL_VIEW_ID, BUILT_IN_VIEWS, type SavedView } from '../hooks/useSavedViews.js'
 
@@ -68,21 +69,26 @@ export function ViewTabs({
       </button>
 
       {BUILT_IN_VIEWS.map((view) => (
-        <button
-          key={view.id}
-          type="button"
-          className={tabClass(activeId === view.id)}
-          title={`Filter: ${view.q}`}
-          onClick={() => onSelect(view.id)}
-        >
-          {view.name}
-          {activeId === view.id && modified ? (
-            <span
-              className="size-1.5 shrink-0 rounded-full bg-primary"
-              title="Filter changed since this view was selected"
-            />
-          ) : null}
-        </button>
+        // A little slower than the board's other tooltips: these sit on a row
+        // the pointer crosses on the way to the filter box.
+        <Tooltip key={view.id} delayDuration={600}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={tabClass(activeId === view.id)}
+              onClick={() => onSelect(view.id)}
+            >
+              {view.name}
+              {activeId === view.id && modified ? (
+                <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+              ) : null}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-72">
+            {view.description}
+            <span className="mt-0.5 block font-mono opacity-70">{view.q}</span>
+          </TooltipContent>
+        </Tooltip>
       ))}
 
       {views.map((view) => {

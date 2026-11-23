@@ -128,6 +128,20 @@ function approvable(pr: PullRequestItem, viewer: string): boolean {
 }
 
 /**
+ * `is:needs-review` - the viewer's own open, non-draft PR with no approval
+ * yet. The "Needs review" tab.
+ */
+function needsReview(pr: PullRequestItem, viewer: string): boolean {
+  return (
+    pr.mergedAt === null &&
+    !pr.isDraft &&
+    pr.author === viewer &&
+    pr.reviewDecision !== 'approved' &&
+    (pr.approvals ?? []).length === 0
+  )
+}
+
+/**
  * `is:mergeable` - open, and the viewer could press Merge now with clear
  * checks. The "Ready to merge" tab.
  */
@@ -165,6 +179,7 @@ function termMatches(item: DashboardItem, term: FilterTerm, ctx: FilterContext):
       if (value === 'merged') return pr !== null && pr.mergedAt !== null
       if (value === 'approvable') return pr !== null && approvable(pr, ctx.viewer)
       if (value === 'mergeable') return pr !== null && readyToMerge(pr)
+      if (value === 'needs-review') return pr !== null && needsReview(pr, ctx.viewer)
       // Everything else on the board is open; accepted so a pasted GitHub query works.
       if (value === 'open') return pr === null || pr.mergedAt === null
       return false
