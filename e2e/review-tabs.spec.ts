@@ -29,9 +29,11 @@ test('Needs review keeps your own unapproved pull requests', async ({ board }) =
 test('Ready to merge and Ready to approve sit beside All and filter the board', async ({ board }) => {
   await board.getByRole('button', { name: 'Ready to merge' }).click()
   await expect(board).toHaveURL(/q=is%3Amergeable/)
-  // canMerge: false on these two in the fixtures.
-  await expect(board.getByText('Idempotency keys for refunds')).toHaveCount(0)
-  await expect(board.getByText('Bump node to 22')).toHaveCount(0)
+  // A draft, failing checks and pending checks are not ready to merge.
+  await expect(board.getByText('Short title')).toHaveCount(0)
+  await expect(board.getByText('Fix flaky clock test')).toHaveCount(0)
+  await expect(board.getByText('Docs: fuel table units')).toHaveCount(0)
+  await expect(board.getByText('Dark mode for the invoice view').first()).toBeVisible()
 
   await board.getByRole('button', { name: 'Ready to approve' }).click()
   // Changes requested is not ready to approve.
