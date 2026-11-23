@@ -330,7 +330,9 @@ export function ReviewersButton({ pr, onChanged }: ReviewersButtonProps) {
   // one, the poll's otherwise. Teams count toward `pending` but have no face.
   const people: CardReviewer[] = view
     ? view.reviewers.filter((r) => !r.isTeam).map((r) => ({ login: r.login, state: r.state }))
-    : pr.reviewers
+    : // Absent from a server older than this page (dist is rebuilt under a
+      // running server); fall back to the count alone.
+      (pr.reviewers ?? [])
   const waiting = people.filter((r) => r.state === 'pending')
   const answered = people.filter((r) => r.state !== 'pending')
   // Amber while someone owes a review, red while changes stand; otherwise the
