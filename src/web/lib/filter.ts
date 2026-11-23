@@ -146,7 +146,7 @@ function needsReview(pr: PullRequestItem, viewer: string): boolean {
  * checks. The "Ready to merge" tab.
  */
 function readyToMerge(pr: PullRequestItem): boolean {
-  return pr.mergedAt === null && pr.canMerge && checksClear(pr)
+  return pr.mergedAt === null && !pr.isDraft && pr.canMerge && checksClear(pr)
 }
 
 /** Whether one term holds for one row, before negation is applied. */
