@@ -39,8 +39,8 @@ const scrollToCard = (id: string) => {
 /**
  * Keyboard cursor over the visible cards: j/k walk every card in reading
  * order, the arrows treat the board as the 2D grid it looks like, Enter/o
- * open the selection, and r/s/m/a/c/p press the selected card's own action
- * buttons. There is no separate "keyboard selection" state: the
+ * open the selection, r/s/m/a/c/p press the selected card's own action
+ * buttons, and R (shift) refreshes the board - lowercase r was already taken. There is no separate "keyboard selection" state: the
  * cursor IS lastClickedId, so a click and a keypress move the same marker and
  * the card shows the same ring either way - two selection mechanisms fighting
  * over two highlights would be worse than sharing one.
@@ -49,6 +49,7 @@ export function useBoardKeys(
   columns: BoardCursorColumn[],
   selectedId: string | null,
   onSelect: (id: string) => void,
+  onRefresh?: () => void,
 ) {
   useEffect(() => {
     // j/k deliberately keep the flat reading order and cross column
@@ -61,7 +62,11 @@ export function useBoardKeys(
       const isArrow =
         key === 'ArrowDown' || key === 'ArrowUp' || key === 'ArrowLeft' || key === 'ArrowRight'
       const action = ACTION_KEYS[key]
-      if (key !== 'j' && key !== 'k' && key !== 'o' && key !== 'Enter' && !isArrow && !action) {
+      const refresh = key === 'R' && onRefresh !== undefined
+      if (
+        key !== 'j' && key !== 'k' && key !== 'o' && key !== 'Enter' && !isArrow && !action &&
+        !refresh
+      ) {
         return
       }
       // Same guard the FilterBar uses for '/': leave keys alone while the user
@@ -73,6 +78,13 @@ export function useBoardKeys(
       // Enter on a focused button or link is activating that control, not
       // asking to open the selected card on top of it.
       if (key === 'Enter' && target?.closest('a, button, [role="menuitem"]')) return
+
+      if (refresh) {
+        // Needs no selection: it is the header's button, not the card's.
+        event.preventDefault()
+        onRefresh()
+        return
+      }
 
       if (action) {
         if (!selectedId) return
@@ -168,5 +180,5 @@ export function useBoardKeys(
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [columns, selectedId, onSelect])
+  }, [columns, selectedId, onSelect, onRefresh])
 }

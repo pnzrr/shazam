@@ -41,3 +41,23 @@ test('Ready to merge and Ready to approve sit beside All and filter the board', 
   await expect(board.getByText('Idempotency keys for refunds').first()).toBeVisible()
   await board.screenshot({ path: 'test-results/review-tabs-approve.png' })
 })
+
+test('Shift+R refreshes the board, lowercase r still means reviewers', async ({ board }) => {
+  const refresh = board.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/dashboard/refresh'),
+  )
+  // The fixture board opens with a terminal focused, and keys typed there
+  // belong to the terminal; click off it first.
+  await board.getByRole('heading', { name: 'shazam' }).click()
+  await board.keyboard.press('Shift+R')
+  await refresh
+
+  // With nothing selected, r is a no-op rather than a refresh.
+  let refreshed = false
+  board.on('request', (request) => {
+    if (request.url().endsWith('/api/dashboard/refresh')) refreshed = true
+  })
+  await board.keyboard.press('r')
+  await board.waitForTimeout(300)
+  expect(refreshed).toBe(false)
+})

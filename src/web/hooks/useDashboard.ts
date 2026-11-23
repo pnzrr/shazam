@@ -44,6 +44,9 @@ export function useDashboard(intervalMs: number): DashboardState {
     }
   }, [])
 
+  // Stable, so the board's key listener does not re-bind on every render.
+  const refresh = useCallback(() => load(true), [load])
+
   useEffect(() => {
     mounted.current = true
     void load(false)
@@ -73,6 +76,6 @@ export function useDashboard(intervalMs: number): DashboardState {
     refreshing,
     error,
     unauthorized,
-    refresh: () => load(true),
+    refresh,
   }
 }

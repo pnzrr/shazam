@@ -370,7 +370,12 @@ export function App() {
     [visibleByColumn, collapsedColumns, orderedColumns],
   )
 
-  useBoardKeys(cursorColumns, lastClickedId, setLastClickedId)
+  const { refreshing, refresh } = dashboard
+  const refreshFromKeys = useCallback(() => {
+    // Holding R must not stack requests behind one already in flight.
+    if (!refreshing) void refresh()
+  }, [refreshing, refresh])
+  useBoardKeys(cursorColumns, lastClickedId, setLastClickedId, refreshFromKeys)
 
   if (dashboard.unauthorized) {
     return (
@@ -535,7 +540,7 @@ export function App() {
                   is a question you ask at this button. */}
               <TooltipContent>
                 <div className="flex flex-col gap-0.5">
-                  <span>Refresh now</span>
+                  <span>Refresh now <kbd className="ml-1 font-mono opacity-80">R</kbd></span>
                   {data ? <span className="opacity-80">Updated {relativeTime(data.fetchedAt)}</span> : null}
                   {data?.rateLimit ? (
                     <span className="opacity-80">
