@@ -41,7 +41,7 @@ import { useColumnOrder } from './hooks/useColumnOrder.js'
 import { useDashboard } from './hooks/useDashboard.js'
 import { useHealth } from './hooks/useHealth.js'
 import { useIsMobile } from './hooks/useIsMobile.js'
-import { activeViewQuery, useSavedViews } from './hooks/useSavedViews.js'
+import { activeViewQuery, BUILT_IN_VIEWS, useSavedViews } from './hooks/useSavedViews.js'
 import { useSessions } from './hooks/useSessions.js'
 import { useAppearance } from './lib/appearance.js'
 import { useDensity } from './lib/density.js'
@@ -326,7 +326,7 @@ export function App() {
 
   const selectView = (id: string) => {
     savedViews.activate(id)
-    const view = savedViews.views.find((v) => v.id === id) ?? null
+    const view = [...BUILT_IN_VIEWS, ...savedViews.views].find((v) => v.id === id) ?? null
     setQuery(view?.q ?? '')
     persistOwners(new Set(view?.owners ?? []))
   }
@@ -349,7 +349,7 @@ export function App() {
       const byOwner = visible.filter((item) => ownerPasses(owners, ownerOf(item)))
       map.set(
         column.id,
-        byOwner.filter((item) => matchesFilter(item, parsedQuery)),
+        byOwner.filter((item) => matchesFilter(item, parsedQuery, { viewer: data?.viewer ?? '' })),
       )
     }
     return map

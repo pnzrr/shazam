@@ -1,10 +1,12 @@
 import {
   type Approval,
+  type CardReviewer,
   type CheckState,
   type IssueItem,
   type MergeMethod,
   type MergeableState,
   type PullRequestItem,
+  type ReviewerState,
   type RepoRef,
   type ReviewDecision,
   reviewSatisfied,
@@ -56,7 +58,11 @@ export interface RawPr {
   additions: number
   deletions: number
   comments: { totalCount: number }
-  reviewRequests: { totalCount: number }
+  reviewRequests: {
+    totalCount: number
+    /** Absent on the merged column's lean query. A team has no login. */
+    nodes?: ({ requestedReviewer: { login?: string } | null } | null)[]
+  }
   reviewThreads: { nodes: ({ isResolved: boolean } | null)[] }
   commits: { nodes: ({ commit: { statusCheckRollup: { state: string } | null } } | null)[] }
   /** Absent on the merged column's lean query. */
@@ -75,6 +81,36 @@ export function viewerApproved(raw: RawPr, viewer: string): boolean {
   return (raw.latestOpinionatedReviews?.nodes ?? []).some(
     (review) => review?.state === 'APPROVED' && review.author?.login === viewer,
   )
+}
+
+const REVIEW_STATES: Record<string, ReviewerState> = {
+  APPROVED: 'approved',
+  CHANGES_REQUESTED: 'changes_requested',
+  COMMENTED: 'commented',
+  DISMISSED: 'dismissed',
+}
+
+/**
+ * People on the PR: asked and waiting first, then standing reviews. A person
+ * asked again after reviewing is waiting, so the request wins.
+ */
+function cardReviewers(raw: RawPr): CardReviewer[] {
+  const out: CardReviewer[] = []
+  const seen = new Set<string>()
+  for (const node of raw.reviewRequests.nodes ?? []) {
+    const login = node?.requestedReviewer?.login
+    if (!login || seen.has(login)) continue
+    seen.add(login)
+    out.push({ login, state: 'pending' })
+  }
+  for (const review of raw.latestOpinionatedReviews?.nodes ?? []) {
+    const login = review?.author?.login
+    const state = review ? REVIEW_STATES[review.state] : undefined
+    if (!login || !state || seen.has(login)) continue
+    seen.add(login)
+    out.push({ login, state })
+  }
+  return out
 }
 
 /** Each reviewer whose standing verdict is an approval, earliest first. */
@@ -187,6 +223,7 @@ export function normalizePr(raw: RawPr): PullRequestItem {
     mergeState: 'unknown',
     commentCount: raw.comments.totalCount,
     pendingReviewerCount: raw.reviewRequests.totalCount,
+    reviewers: cardReviewers(raw),
     unresolvedThreadCount: raw.reviewThreads.nodes.filter((n) => n && !n.isResolved).length,
     changedFiles: raw.changedFiles,
     additions: raw.additions,

@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { ALL_VIEW_ID, type SavedView } from '../hooks/useSavedViews.js'
+import { ALL_VIEW_ID, BUILT_IN_VIEWS, type SavedView } from '../hooks/useSavedViews.js'
 
 export interface ViewTabsProps {
   views: SavedView[]
@@ -66,6 +66,24 @@ export function ViewTabs({
       <button type="button" className={tabClass(activeId === ALL_VIEW_ID)} onClick={() => onSelect(ALL_VIEW_ID)}>
         All
       </button>
+
+      {BUILT_IN_VIEWS.map((view) => (
+        <button
+          key={view.id}
+          type="button"
+          className={tabClass(activeId === view.id)}
+          title={`Filter: ${view.q}`}
+          onClick={() => onSelect(view.id)}
+        >
+          {view.name}
+          {activeId === view.id && modified ? (
+            <span
+              className="size-1.5 shrink-0 rounded-full bg-primary"
+              title="Filter changed since this view was selected"
+            />
+          ) : null}
+        </button>
+      ))}
 
       {views.map((view) => {
         const active = view.id === activeId

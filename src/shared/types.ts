@@ -62,6 +62,11 @@ export interface Approval {
   submittedAt: string | null
 }
 
+export interface CardReviewer {
+  login: string
+  state: ReviewerState
+}
+
 export interface PullRequestItem {
   kind: 'pull_request'
   id: string
@@ -88,6 +93,13 @@ export interface PullRequestItem {
   commentCount: number
   /** Reviewers who have been asked and have not answered. */
   pendingReviewerCount: number
+  /**
+   * Who is on it now, people only: those asked and not yet answered
+   * (`pending`), then everyone whose latest review stands. Teams count toward
+   * `pendingReviewerCount` but are not listed. The reviewers button names
+   * these, so a PR somebody already approved does not read as "nobody".
+   */
+  reviewers: CardReviewer[]
   /** Unresolved inline review threads. */
   unresolvedThreadCount: number
   changedFiles: number

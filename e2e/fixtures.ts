@@ -44,7 +44,9 @@ function pr(overrides: Partial<PullRequestItem> & { repo: string; title: string 
     mergeable: 'mergeable',
     mergeState: 'clean',
     commentCount: 0,
+    approvals: [],
     pendingReviewerCount: 1,
+    reviewers: [{ login: 'hubot', state: 'pending' }],
     unresolvedThreadCount: 0,
     changedFiles: 3,
     additions: 120,
@@ -96,7 +98,14 @@ export const dashboard: DashboardData = {
       pr({ repo: 'globex/infra', title: 'Bump cloudflared from 2026.10.7 to 2026.11.0', author: 'dependabot', reviewDecision: 'none' }),
     ],
     approvedPrs: [
-      pr({ repo: 'globex/web', title: 'Dark mode for the invoice view', author: 'lsimpson', reviewDecision: 'approved' }),
+      pr({
+        repo: 'globex/web',
+        title: 'Dark mode for the invoice view',
+        author: 'lsimpson',
+        reviewDecision: 'approved',
+        pendingReviewerCount: 0,
+        reviewers: [{ login: 'carol', state: 'approved' }],
+      }),
     ],
     recentlyMerged: [
       pr({ repo: 'acme/rocket', title: 'Stage separation timing', mergedAt: ago(30), mergedBy: 'octocat', reviewDecision: 'approved' }),
