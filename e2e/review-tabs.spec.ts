@@ -15,6 +15,17 @@ test('an approved PR names its reviewer on the reviewers button', async ({ board
   await board.screenshot({ path: 'test-results/review-tabs-board.png' })
 })
 
+test('Needs review keeps your own unapproved pull requests', async ({ board }) => {
+  await board.getByRole('button', { name: 'Needs review' }).hover()
+  await expect(board.getByRole('tooltip')).toContainText('nobody has approved')
+  await board.getByRole('button', { name: 'Needs review' }).click()
+  // octocat is the viewer and the fixtures' default author; the draft is left out.
+  await expect(board.getByText('Docs: fuel table units').first()).toBeVisible()
+  await expect(board.getByText('Short title')).toHaveCount(0)
+  await expect(board.getByText('Idempotency keys for refunds')).toHaveCount(0)
+  await board.screenshot({ path: 'test-results/review-tabs-needs.png' })
+})
+
 test('Ready to merge and Ready to approve sit beside All and filter the board', async ({ board }) => {
   await board.getByRole('button', { name: 'Ready to merge' }).click()
   await expect(board).toHaveURL(/q=is%3Amergeable/)
