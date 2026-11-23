@@ -58,8 +58,15 @@ const PR_FRAGMENT = /* GraphQL */ `
     comments {
       totalCount
     }
-    reviewRequests(first: 0) {
+    reviewRequests(first: 10) {
       totalCount
+      nodes {
+        requestedReviewer {
+          ... on User {
+            login
+          }
+        }
+      }
     }
     reviewThreads(first: 50) {
       nodes {
